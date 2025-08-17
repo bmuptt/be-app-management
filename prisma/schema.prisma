@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique @db.VarChar(255)
+  name       String   @db.VarChar(255)
+  password   String   @default("P4ssw0rd")
+  gender     String   @db.VarChar(10)
+  birthdate  DateTime @db.Date
+  photo      String?
+  active     String   @default("Inactive")
+  role_id    Int?
+  created_by Int?
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_by Int?
+  updated_at DateTime @updatedAt @db.Timestamptz
+  role       Role?    @relation(fields: [role_id], references: [id])
+
+  @@map("users")
+}
+
+model AccessToken {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  token         String
+  refresh_token String   @unique @db.VarChar(255)
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @updatedAt @db.Timestamptz
+
+  @@map("access_tokens")
+}
+
+model Role {
+  id         Int        @id @default(autoincrement())
+  name       String     @unique @db.VarChar(255)
+  created_by Int?
+  created_at DateTime   @default(now()) @db.Timestamptz
+  updated_by Int?
+  updated_at DateTime   @updatedAt @db.Timestamptz
+  users      User[]
+  menus      RoleMenu[]
+
+  @@map("roles")
+}
+
+model Menu {
+  id           Int        @id @default(autoincrement())
+  key_menu     String     @unique @db.VarChar(255)
+  name         String     @db.VarChar(255)
+  order_number Int
+  url          String?
+  menu_id      Int?
+  active       String     @default("Active")
+  created_by   Int?
+  created_at   DateTime   @default(now()) @db.Timestamptz
+  updated_by   Int?
+  updated_at   DateTime   @updatedAt @db.Timestamptz
+  parent       Menu?      @relation("MenuToMenu", fields: [menu_id], references: [id])
+  children     Menu[]     @relation("MenuToMenu")
+  roles        RoleMenu[]
+
+  @@map("menus")
+}
+
+model RoleMenu {
+  role_id    Int
+  menu_id    Int
+  access     Boolean  @default(false)
+  create     Boolean  @default(false)
+  update     Boolean  @default(false)
+  delete     Boolean  @default(false)
+  approval   Boolean  @default(false)
+  approval_2 Boolean  @default(false)
+  approval_3 Boolean  @default(false)
+  role       Role    @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  menu       Menu    @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, menu_id])
+  @@map("role_menu")
+}
