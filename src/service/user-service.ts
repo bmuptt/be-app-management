@@ -1,9 +1,9 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { prismaClient } from '../config/database';
 import { IRequestUser, IUserObject } from '../model/user-model';
 import bcrypt from 'bcrypt';
 import { IRequestList } from '../model/global-model';
 import { pagination } from '../helper/pagination-helper';
+import { userRepository } from '../repository';
 
 const emailAdmin = process.env.EMAIL_ADMIN || 'admin@gmail.com';
 const passAdmin = process.env.PASS_ADMIN || 'admin123';
@@ -43,19 +43,10 @@ export class UserService {
     /**
      * pembuatan paging
      */
-
     const { take, skip } = pagination(req);
 
-    const users = await prismaClient.user.findMany({
-      where,
-      orderBy,
-      skip,
-      take,
-    });
-
-    const total = await prismaClient.user.count({
-      where
-    })
+    const users = await userRepository.findMany(where, orderBy, skip, take);
+    const total = await userRepository.count(where);
 
     return {
       data: users,
@@ -64,83 +55,50 @@ export class UserService {
   }
 
   static async detailFromEmail(email: string, id: number | null = null) {
-    const user = await prismaClient.user.findFirst({
-      where: {
-        email: email,
-        ...(id !== null && { id: { not: id } }),
-      },
-    });
-
-    return user;
+    return await userRepository.findFirstByEmail(email, id);
   }
 
   static async detail(
     prisma: PrismaClient | Prisma.TransactionClient,
     id: number
   ) {
-    return await prisma.user.findUnique({
-      include: { role: true },
-      where: {
-        id,
-      },
-    });
+    return await userRepository.findUniqueWithRole(prisma, id);
   }
 
   static async store(req: IRequestUser & { user?: IUserObject }) {
     const hashedPassword = await bcrypt.hash(passAdmin, 10);
 
-    const data = await prismaClient.user.create({
-      data: {
-        email: req.email, // Ambil manual tiap field, jangan gunakan `...req`
-        name: req.name,
-        gender: req.gender,
-        birthdate: new Date(req.birthdate), // Konversi ke Date
-        password: hashedPassword,
-        active: 'Active',
-        role_id: req.role_id,
-        created_by: req.user?.id || 0, // Ambil user ID, jika tidak ada set default 0
-      },
+    const data = await userRepository.create({
+      email: req.email,
+      name: req.name,
+      gender: req.gender,
+      birthdate: new Date(req.birthdate),
+      password: hashedPassword,
+      active: 'Active',
+      role_id: req.role_id,
+      created_by: req.user?.id || 0,
     });
 
     return data;
   }
 
   static async update(id: number, req: IRequestUser, auth: IUserObject) {
-    const data = await prismaClient.user.update({
-      where: { id },
-      data: {
-        name: req.name,
-        gender: req.gender,
-        birthdate: new Date(req.birthdate),
-        role_id: req.role_id,
-        updated_by: auth.id,
-      },
+    const data = await userRepository.update(id, {
+      name: req.name,
+      gender: req.gender,
+      birthdate: new Date(req.birthdate),
+      role_id: req.role_id,
+      updated_by: auth.id,
     });
 
     return data;
   }
 
   static async resetPassword(id: number) {
-    const data = await prismaClient.user.update({
-      where: { id },
-      data: {
-        active: 'Inactive',
-        updated_by: id
-      },
-    });
-
-    return data;
+    return await userRepository.updateActiveStatus(id, 'Inactive', id);
   }
 
   static async takeOut(id: number) {
-    const data = await prismaClient.user.update({
-      where: { id },
-      data: {
-        active: 'Take Out',
-        updated_by: id
-      },
-    });
-
-    return data;
+    return await userRepository.updateActiveStatus(id, 'Take Out', id);
   }
 }

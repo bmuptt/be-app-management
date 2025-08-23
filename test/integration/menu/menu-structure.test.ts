@@ -53,7 +53,7 @@ describe('Menu Structure Business Flow', () => {
 
     
     const initialStructureResponse = await supertest(web)
-      .get(`${baseUrlTest}/menu-structure`)
+      .get(`${baseUrlTest}/menu/structure`)
       .set('Cookie', cookieHeader ?? '');
 
     console.log('Initial structure response status:', initialStructureResponse.status);
@@ -139,7 +139,7 @@ describe('Menu Structure Business Flow', () => {
     
     // Get updated menu structure to verify our created menus exist
     const updatedStructureResponse = await supertest(web)
-      .get(`${baseUrlTest}/menu-structure`)
+      .get(`${baseUrlTest}/menu/structure`)
       .set('Cookie', cookieHeader ?? '');
 
     console.log('Updated structure response status:', updatedStructureResponse.status);
@@ -195,7 +195,7 @@ describe('Menu Structure Business Flow', () => {
     console.log('🧪 Testing verify final structure...');
     
     const finalStructureResponse = await supertest(web)
-      .get(`${baseUrlTest}/menu-structure`)
+      .get(`${baseUrlTest}/menu/structure`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(finalStructureResponse.status).toBe(200);

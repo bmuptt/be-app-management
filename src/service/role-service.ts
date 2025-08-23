@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client';
 import { prismaClient } from '../config/database';
 import { IRequestList } from '../model/global-model';
-import { IRequestRole } from '../model/role-model';
+import { IRequestRole, IRoleCreateData, IRoleUpdateData } from '../model/role-model';
 import { IUserObject } from '../model/user-model';
 import { pagination } from '../helper/pagination-helper';
+import { roleRepository } from '../repository';
 
 const emailAdmin = process.env.EMAIL_ADMIN || 'admin@gmail.com';
 
@@ -29,16 +30,8 @@ export class RoleService {
 
     const { take, skip } = pagination(req);
 
-    const data = await prismaClient.role.findMany({
-      where,
-      orderBy,
-      skip,
-      take,
-    });
-
-    const total = await prismaClient.role.count({
-      where,
-    });
+    const data = await roleRepository.findMany(where, orderBy, skip, take);
+    const total = await roleRepository.count(where);
 
     return {
       data,
@@ -47,49 +40,28 @@ export class RoleService {
   }
 
   static async detail(id: number) {
-    return await prismaClient.role.findUnique({
-      where: {
-        id,
-      },
-    });
+    return await roleRepository.findUnique(id);
   }
 
   static async store(req: IRequestRole, auth: IUserObject) {
-    const data = await prismaClient.role.create({
-      data: {
-        name: req.name,
-        created_by: auth.id,
-      },
-    });
+    const createData: IRoleCreateData = {
+      name: req.name,
+      created_by: auth.id,
+    };
 
-    return data;
+    return await roleRepository.create(createData);
   }
 
   static async update(id: number, req: IRequestRole, auth: IUserObject) {
-    const data = await prismaClient.role.update({
-      where: { id },
-      data: {
-        name: req.name,
-        updated_by: auth.id,
-      },
-    });
+    const updateData: IRoleUpdateData = {
+      name: req.name,
+      updated_by: auth.id,
+    };
 
-    return data;
+    return await roleRepository.update(id, updateData);
   }
 
   static async destroy(id: number) {
-    return await prismaClient.$transaction(async (tx) => {
-      await tx.user.updateMany({
-        where: { role_id: id },
-        data: { role_id: null }, // atau hapus relasi, tergantung modelnya
-      });
-  
-      const data = await tx.role.delete({
-        where: { id },
-      });
-  
-      return data;
-    });
-
+    return await roleRepository.deleteWithTransaction(id);
   }
 }

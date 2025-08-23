@@ -1,54 +1,29 @@
-import { IUserObject } from '../model/user-model';
+import { IUserObject, IUserObjectWithoutPassword } from '../model/user-model';
 import {
   generateRefreshToken,
   generateToken,
 } from '../validation/auth-validation';
 import { IAccessTokenResponse } from '../model/accessToken-model';
-import { prismaClient } from '../config/database';
 import { PrismaClient, Prisma } from '@prisma/client';
+import { accessTokenRepository } from '../repository';
 
 export class AccessTokenService {
   static async detailByRefreshToken(prisma: PrismaClient, refresh_token: string) {
-    return await prisma.accessToken.findUnique({
-      where: {
-        refresh_token
-      }
-    })
+    return await accessTokenRepository.findUniqueByRefreshToken(prisma, refresh_token);
   }
 
-  static async addToken(prisma: PrismaClient | Prisma.TransactionClient, user: IUserObject): Promise<IAccessTokenResponse> {
+  static async addToken(prisma: PrismaClient | Prisma.TransactionClient, user: IUserObject | IUserObjectWithoutPassword): Promise<IAccessTokenResponse> {
     const token = generateToken(user);
     const refresh_token = generateRefreshToken();
 
-    await prisma.accessToken.create({
-      data: {
-        token,
-        refresh_token,
-        user_id: user.id,
-      },
-    });
-
-    const data = {
-      token,
-      refresh_token,
-    };
-
-    return data;
+    return await accessTokenRepository.create(prisma, user, token, refresh_token);
   }
 
   static async destroy(prisma: PrismaClient | Prisma.TransactionClient, refresh_token: string) {
-    await prisma.accessToken.delete({
-      where: {
-        refresh_token,
-      },
-    }); 
+    await accessTokenRepository.deleteByRefreshToken(prisma, refresh_token);
   }
 
   static async destroyByToken(prisma: PrismaClient | Prisma.TransactionClient, token: string) {
-    await prisma.accessToken.deleteMany({
-      where: {
-        token,
-      },
-    });
+    await accessTokenRepository.deleteByToken(prisma, token);
   }
 }

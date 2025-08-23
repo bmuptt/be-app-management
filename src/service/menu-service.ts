@@ -1,14 +1,19 @@
 import { Prisma } from '@prisma/client';
-import { prismaClient } from '../config/database';
 import {
   IRequestMenu,
   IRequestMenuChangeParent,
   IRequestMenuSort,
   IRequestMenuStore,
+  IMenuCreateData,
+  IMenuUpdateData,
+  IMenuChangeParentData,
+  IMenuActiveData,
+  IMenuObject,
 } from '../model/menu-model';
 import { IUserObject } from '../model/user-model';
 import { IRequestList } from '../model/global-model';
 import { pagination } from '../helper/pagination-helper';
+import { menuRepository } from '../repository';
 
 export class MenuService {
   static async index(id: number) {
@@ -25,20 +30,16 @@ export class MenuService {
       where.menu_id = id;
     }
 
-    const data = await prismaClient.menu.findMany({
-      include: {
-        children: true,
+    const orderBy: Prisma.MenuOrderByWithRelationInput[] = [
+      {
+        order_number: 'asc',
       },
-      where,
-      orderBy: [
-        {
-          order_number: 'asc',
-        },
-        {
-          id: 'asc',
-        },
-      ],
-    });
+      {
+        id: 'asc',
+      },
+    ];
+
+    const data = await menuRepository.findManyWithChildren(where, orderBy);
 
     return {
       data,
@@ -46,14 +47,7 @@ export class MenuService {
   }
 
   static async detail(id: number) {
-    return await prismaClient.menu.findUnique({
-      include: {
-        children: true,
-      },
-      where: {
-        id,
-      },
-    });
+    return await menuRepository.findUniqueWithChildren(id);
   }
 
   static async listHeader(id: number, req: IRequestList) {
@@ -77,16 +71,8 @@ export class MenuService {
 
     const { take, skip } = pagination(req);
 
-    const data = await prismaClient.menu.findMany({
-      where,
-      orderBy,
-      skip,
-      take,
-    });
-
-    const total = await prismaClient.menu.count({
-      where,
-    });
+    const data = await menuRepository.findMany(where, orderBy, skip, take);
+    const total = await menuRepository.count(where);
 
     return {
       data,
@@ -95,41 +81,36 @@ export class MenuService {
   }
 
   static async getAllNestedMenus() {
-    const flatMenus = await prismaClient.menu.findMany({
-      where: {
-        active: 'Active',
-      },
-      orderBy: {
-        order_number: 'asc',
-      },
-      select: {
-        id: true,
-        key_menu: true,
-        name: true,
-        url: true,
-        order_number: true,
-        active: true,
-        menu_id: true, // ini penanda parent-nya
-      },
-    });
+    const flatMenus = await menuRepository.findManyActive();
 
-    const menuMap = new Map<number, any>();
-    const tree: any[] = [];
+    // Define interface for menu with children
+    interface IMenuWithChildren extends IMenuObject {
+      children: IMenuWithChildren[];
+    }
+
+    const menuMap = new Map<number, IMenuWithChildren>();
+    const tree: IMenuWithChildren[] = [];
 
     // Inisialisasi: tambahkan submenus kosong ke setiap item
     for (const menu of flatMenus) {
-      (menu as any).children = [];
-      menuMap.set(menu.id, menu);
+      const menuWithChildren: IMenuWithChildren = {
+        ...menu,
+        children: [],
+      };
+      menuMap.set(menu.id, menuWithChildren);
     }
 
+    // Build hierarchical structure
     for (const menu of flatMenus) {
+      const menuWithChildren = menuMap.get(menu.id)!;
+      
       if (menu.menu_id) {
         const parent = menuMap.get(menu.menu_id);
         if (parent) {
-          parent.children.push(menu);
+          parent.children.push(menuWithChildren);
         }
       } else {
-        tree.push(menu); // Root menu (tidak punya parent)
+        tree.push(menuWithChildren); // Root menu (tidak punya parent)
       }
     }
 
@@ -137,19 +118,7 @@ export class MenuService {
   }
 
   static async menuLastByParentId(menu_id: number | null) {
-    const menuLast = await prismaClient.menu.findFirst({
-      where: {
-        menu_id,
-      },
-      orderBy: [
-        {
-          order_number: 'desc',
-        },
-        {
-          id: 'desc',
-        },
-      ],
-    });
+    const menuLast = await menuRepository.findFirstByParentId(menu_id);
 
     let order_number = 0;
 
@@ -162,52 +131,40 @@ export class MenuService {
 
   static async store(req: IRequestMenuStore, auth: IUserObject) {
     const menu_id = req.menu_id ?? null;
-
     const order_number = await this.menuLastByParentId(menu_id);
 
-    const data = await prismaClient.menu.create({
-      data: {
-        key_menu: req.key_menu,
-        name: req.name,
-        order_number,
-        url: req.url,
-        menu_id,
-        active: 'Active',
-        created_by: auth.id,
-      },
-    });
+    const createData: IMenuCreateData = {
+      key_menu: req.key_menu,
+      name: req.name,
+      order_number,
+      url: req.url,
+      menu_id,
+      active: 'Active',
+      created_by: auth.id,
+    };
 
-    return data;
+    return await menuRepository.create(createData);
   }
 
   static async update(id: number, req: IRequestMenu, auth: IUserObject) {
-    const data = await prismaClient.menu.update({
-      where: { id },
-      data: {
-        key_menu: req.key_menu,
-        name: req.name,
-        url: req.url,
-        updated_by: auth.id,
-      },
-    });
+    const updateData: IMenuUpdateData = {
+      key_menu: req.key_menu,
+      name: req.name,
+      url: req.url,
+      updated_by: auth.id,
+    };
 
-    return data;
+    return await menuRepository.update(id, updateData);
   }
 
   static async sort(req: IRequestMenuSort, auth: IUserObject) {
-    await prismaClient.$transaction(async (tx) => {
-      await Promise.all(
-        req.list_menu.map((data, index) =>
-          tx.menu.update({
-            where: { id: data.id },
-            data: {
-              order_number: index + 1,
-              updated_by: auth.id,
-            },
-          })
-        )
-      );
-    });
+    const menus = req.list_menu.map((data, index) => ({
+      id: data.id,
+      order_number: index + 1,
+      updated_by: auth.id,
+    }));
+
+    await menuRepository.sortMenus(menus);
   }
 
   static async changeParent(
@@ -216,50 +173,27 @@ export class MenuService {
     auth: IUserObject
   ) {
     const menu_id = req.menu_id ?? null;
-
     const order_number = await this.menuLastByParentId(menu_id);
 
-    const data = await prismaClient.menu.update({
-      where: {
-        id,
-      },
-      data: {
-        menu_id,
-        order_number,
-        updated_by: auth.id,
-      },
-    });
+    const changeParentData: IMenuChangeParentData = {
+      menu_id,
+      order_number,
+      updated_by: auth.id,
+    };
 
-    return data;
+    return await menuRepository.changeParent(id, changeParentData);
   }
 
   static async destroy(id: number, auth: IUserObject) {
-    return await prismaClient.$transaction(async (tx) => {
-      await tx.roleMenu.deleteMany({
-        where: { menu_id: id },
-      });
-
-      const data = await tx.menu.update({
-        where: { id },
-        data: {
-          active: 'Inactive',
-          updated_by: auth.id,
-        },
-      });
-
-      return data;
-    });
+    return await menuRepository.deleteWithTransaction(id, auth.id);
   }
 
   static async active(id: number, auth: IUserObject) {
-    const data = await prismaClient.menu.update({
-      where: { id },
-      data: {
-        active: 'Active',
-        updated_by: auth.id,
-      },
-    });
+    const activeData: IMenuActiveData = {
+      active: 'Active',
+      updated_by: auth.id,
+    };
 
-    return data;
+    return await menuRepository.updateActive(id, activeData);
   }
 }

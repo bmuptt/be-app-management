@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { z } from 'zod';
-import { IUserObject } from '../model/user-model';
+import { IUserObject, IUserObjectWithoutPassword } from '../model/user-model';
 import { ResponseError } from '../config/response-error';
 import { prismaClient } from '../config/database';
 import crypto from 'crypto';
@@ -41,8 +41,14 @@ const permissionSchema = z.object({
     .min(1, `The key menu is required!`),
 });
 
-export const generateToken = (user: IUserObject) => {
-  const { password, ...userWithoutPassword } = user;
+export const generateToken = (user: IUserObject | IUserObjectWithoutPassword) => {
+  // Create a type-safe way to handle both types
+  const userWithoutPassword = 'password' in user 
+    ? (() => {
+        const { password, ...rest } = user;
+        return rest;
+      })()
+    : user;
 
   return jwt.sign(userWithoutPassword, secret, {
     expiresIn: '15m',

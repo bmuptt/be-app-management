@@ -37,12 +37,10 @@ export class AuthController {
     try {
       const response = await AuthService.refreshToken(refresh_token);
 
-      const { password, ...user } = response.user;
-
       const data = {
         message: 'Login successful',
         refresh_token: response.refresh_token,
-        user,
+        user: response.user,
       };
 
       // Set token baru di cookie

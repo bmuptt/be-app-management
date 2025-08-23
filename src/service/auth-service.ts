@@ -4,8 +4,15 @@ import { ILoginRequest } from '../model/auth-model';
 import bcrypt from 'bcrypt';
 import { UserService } from './user-service';
 import { AccessTokenService } from './accessToken-service';
-import { IUserObject } from '../model/user-model';
+import { IUserObject, IUserObjectWithoutPassword } from '../model/user-model';
 import { IMenu } from '../model/menu-model';
+import { IRoleMenuPerm } from '../model/role-menu-model';
+import { authRepository } from '../repository';
+
+// Type for RoleMenu with included menu
+interface IRoleMenuWithMenu {
+  menu: IMenu;
+}
 
 export class AuthService {
   static async login(req: ILoginRequest) {
@@ -25,7 +32,7 @@ export class AuthService {
 
     const formattedUser: IUserObject = {
       ...user,
-      active: user.active === 'Active' ? 'Active' : 'Inactive', // Konversi manual
+      active: user.active === 'Active' ? 'Active' : 'Inactive',
     };
 
     const { token, refresh_token } = await AccessTokenService.addToken(
@@ -41,11 +48,7 @@ export class AuthService {
       throw new ResponseError(403, ['Refresh token not found']);
     }
 
-    const accessToken = await prismaClient.accessToken.findUnique({
-      where: {
-        refresh_token: refreshToken,
-      },
-    });
+    const accessToken = await authRepository.findAccessTokenByRefreshToken(refreshToken);
 
     if (!accessToken) {
       throw new ResponseError(403, ['Refresh token not found']);
@@ -58,9 +61,9 @@ export class AuthService {
     }
 
     return prismaClient.$transaction(async (prisma) => {
-      const formattedUser: IUserObject = {
+      const formattedUser: IUserObjectWithoutPassword = {
         ...user,
-        active: user.active === 'Active' ? 'Active' : 'Inactive', // Konversi manual
+        active: user.active === 'Active' ? 'Active' : 'Inactive',
       };
 
       const { token, refresh_token } = await AccessTokenService.addToken(
@@ -70,7 +73,7 @@ export class AuthService {
 
       await AccessTokenService.destroy(prisma, refreshToken);
 
-      return { token, refresh_token, user };
+      return { token, refresh_token, user: formattedUser };
     });
   }
 
@@ -87,46 +90,18 @@ export class AuthService {
   }
 
   static async listMenu(auth: IUserObject) {
-    const checkRole = await prismaClient.user.findUnique({
-      where: { id: auth.id },
-      select: { role_id: true },
-    });
+    const checkRole = await authRepository.findUserWithRole(auth.id);
 
-    let nestedMenus: any[] = []; // lebih aman didefinisikan tipe arraynya
+    let nestedMenus: IMenu[] = [];
 
     if (checkRole?.role_id) {
-      const user = await prismaClient.user.findUnique({
-        where: { id: auth.id },
-        include: {
-          role: {
-            include: {
-              menus: {
-                where: {
-                  access: true,
-                },
-                include: {
-                  menu: {
-                    include: {
-                      children: true, // Get child menus
-                    },
-                  },
-                },
-                orderBy: {
-                  menu: {
-                    order_number: 'asc', // Ini langsung objek, jangan array
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
+      const user = await authRepository.findUserWithRoleAndMenus(auth.id);
 
       if (!user || !user.role) {
         throw new ResponseError(404, ['Data Not Found!']);
       }
 
-      const flatMenus = user.role.menus.map((roleMenu) => roleMenu.menu);
+      const flatMenus = user.role.menus.map((roleMenu: IRoleMenuWithMenu) => roleMenu.menu);
       nestedMenus = await AuthService.buildMenuTree(flatMenus);
     }
 
@@ -144,24 +119,11 @@ export class AuthService {
       approve3: false,
     };
 
-    const checkRole = await prismaClient.user.findUnique({
-      where: { id: auth.id },
-      select: { role_id: true },
-    });
-
-    const menu = await prismaClient.menu.findFirst({
-      where: {
-        key_menu,
-      },
-    });
+    const checkRole = await authRepository.findUserWithRole(auth.id);
+    const menu = await authRepository.findMenuByKeyMenu(key_menu);
 
     if (checkRole?.role_id && menu) {
-      const roleMenu = await prismaClient.roleMenu.findFirst({
-        where: {
-          menu_id: menu.id,
-          role_id: checkRole.role_id,
-        },
-      });
+      const roleMenu: IRoleMenuPerm | null = await authRepository.findRoleMenuByMenuAndRole(menu.id, checkRole.role_id);
 
       if (roleMenu) {
         data.access = roleMenu.access;

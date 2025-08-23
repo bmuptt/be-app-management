@@ -43,3 +43,53 @@ export interface IRoleMenuPerm {
   approval_2: boolean;
   approval_3: boolean;
 }
+
+export interface IRoleMenuObject {
+  role_id: number;
+  menu_id: number;
+  access: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+  approval: boolean;
+  approval_2: boolean;
+  approval_3: boolean;
+}
+
+export interface IRoleMenuCreateData {
+  role_id: number;
+  menu_id: number;
+  access: boolean;
+  create?: boolean;
+  update?: boolean;
+  delete?: boolean;
+  approval?: boolean;
+  approval_2?: boolean;
+  approval_3?: boolean;
+}
+
+export interface IRoleMenuUpdateData {
+  access?: boolean;
+  create?: boolean;
+  update?: boolean;
+  delete?: boolean;
+  approval?: boolean;
+  approval_2?: boolean;
+  approval_3?: boolean;
+}
+
+export interface IRoleMenuUpsertData {
+  role_id: number;
+  menu_id: number;
+  access: boolean;
+  create?: boolean;
+  update?: boolean;
+  delete?: boolean;
+  approval?: boolean;
+  approval_2?: boolean;
+  approval_3?: boolean;
+}
+
+export interface IRoleMenuListResponse {
+  data: IMenuWithPerm[];
+}
