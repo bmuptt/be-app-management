@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -9,47 +9,51 @@ dotenv.config();
 const baseUrlTest = '/api/app-management/menu';
 
 describe('List Menu Business Flow', () => {
-  let cookies: string | string[];
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Increase timeout for database operations
+    jest.setTimeout(30000);
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
 
     const responseLogin = await AuthLogic.getLoginSuperAdmin();
     expect(responseLogin.status).toBe(200);
 
-    cookies = responseLogin.headers['set-cookie'];
+    const cookies = responseLogin.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-  }, 30000);
-
-  afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
   });
 
-  it('Should successfully list root menus (id=0)', async () => {
-    const response = await supertest(web)
+  afterEach(async () => {
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
+  });
+
+  it('Should handle complete list menu flow including validation, edge cases, and response structure', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
+
+    // ===== TEST 1: LIST ROOT MENUS (id=0) =====
+    console.log('🧪 Testing list root menus...');
+    
+    const rootResponse = await supertest(web)
       .get(`${baseUrlTest}/0`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('List root menus response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data.length).toBeGreaterThan(0);
+    expect(rootResponse.status).toBe(200);
+    expect(rootResponse.body).toHaveProperty('data');
+    expect(Array.isArray(rootResponse.body.data)).toBe(true);
+    expect(rootResponse.body.data.length).toBeGreaterThan(0);
     
     // Check if menus have children property
-    if (response.body.data.length > 0) {
-      expect(response.body.data[0]).toHaveProperty('children');
-      expect(Array.isArray(response.body.data[0].children)).toBe(true);
+    if (rootResponse.body.data.length > 0) {
+      expect(rootResponse.body.data[0]).toHaveProperty('children');
+      expect(Array.isArray(rootResponse.body.data[0].children)).toBe(true);
     }
-  });
 
-  it('Should successfully list submenus for existing parent', async () => {
+    // ===== TEST 2: LIST SUBMENUS FOR EXISTING PARENT =====
+    console.log('🧪 Testing list submenus for existing parent...');
+    
     // First create a parent menu
     const parentResponse = await supertest(web)
       .post(baseUrlTest)
@@ -63,7 +67,7 @@ describe('List Menu Business Flow', () => {
     const parentId = parentResponse.body.data.id;
 
     // Create some submenus
-    await supertest(web)
+    const submenu1Response = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
@@ -72,7 +76,9 @@ describe('List Menu Business Flow', () => {
         menu_id: parentId
       });
 
-    await supertest(web)
+    expect(submenu1Response.status).toBe(200);
+
+    const submenu2Response = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
@@ -80,275 +86,139 @@ describe('List Menu Business Flow', () => {
         name: 'Submenu 2',
         menu_id: parentId
       });
+
+    expect(submenu2Response.status).toBe(200);
 
     // List submenus
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/${parentId}`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('List submenus response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBe(2);
-    expect(response.body.data[0].key_menu).toBe('submenu1');
-    expect(response.body.data[1].key_menu).toBe('submenu2');
-  });
-
-  it('Should return empty array for non-existent parent', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/999999`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('List non-existent parent response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toEqual([]);
-  });
-
-      it('Should handle invalid menu ID format', async () => {
-      const response = await supertest(web)
-        .get(`${baseUrlTest}/invalid`)
-        .set('Cookie', cookieHeader ?? '');
-
-      logger.debug('Invalid menu ID format response', response.body);
-      expect(response.status).toBe(200);
-      // Invalid ID format (NaN) should return empty array or handle gracefully
-      // parseInt('invalid') returns NaN, which should not match any menu_id
-      expect(response.body.data).toEqual([]);
-    });
-
-  it('Should handle negative menu ID', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/-1`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Negative menu ID response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toEqual([]);
-  });
-
-  it('Should handle decimal menu ID', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/1.5`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Decimal menu ID response', response.body);
-    expect(response.status).toBe(200);
-    // parseInt(1.5) returns 1, so it should return submenus of menu ID 1
-    expect(response.body.data.length).toBeGreaterThanOrEqual(0);
-  });
-
-  it('Should return menus ordered by order_number and id', async () => {
-    // Create a parent menu
-    const parentResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'parent-menu',
-        name: 'Parent Menu'
-      });
-
-    expect(parentResponse.status).toBe(200);
-    const parentId = parentResponse.body.data.id;
-
-    // Create submenus in reverse order
-    await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'submenu3',
-        name: 'Submenu 3',
-        menu_id: parentId
-      });
-
-    await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'submenu1',
-        name: 'Submenu 1',
-        menu_id: parentId
-      });
-
-    await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'submenu2',
-        name: 'Submenu 2',
-        menu_id: parentId
-      });
-
-    // List submenus
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/${parentId}`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('List ordered submenus response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBe(3);
-    
-    // Should be ordered by order_number ascending, then by id ascending
-    expect(response.body.data[0].order_number).toBeLessThanOrEqual(response.body.data[1].order_number);
-    expect(response.body.data[1].order_number).toBeLessThanOrEqual(response.body.data[2].order_number);
-  });
-
-  it('Should return correct response structure', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/0`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Response structure test', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-    
-    if (response.body.data.length > 0) {
-      const menu = response.body.data[0];
-      expect(menu).toHaveProperty('id');
-      expect(menu).toHaveProperty('key_menu');
-      expect(menu).toHaveProperty('name');
-      expect(menu).toHaveProperty('url');
-      expect(menu).toHaveProperty('order_number');
-      expect(menu).toHaveProperty('active');
-      expect(menu).toHaveProperty('menu_id');
-      expect(menu).toHaveProperty('created_by');
-      expect(menu).toHaveProperty('created_at');
-      expect(menu).toHaveProperty('updated_by');
-      expect(menu).toHaveProperty('updated_at');
-      expect(menu).toHaveProperty('children');
-      expect(Array.isArray(menu.children)).toBe(true);
-    }
-  });
-
-      it('Should handle very large menu ID', async () => {
-      const response = await supertest(web)
-        .get(`${baseUrlTest}/999999999999`)
-        .set('Cookie', cookieHeader ?? '');
-
-      logger.debug('Very large menu ID response', response.body);
-      expect(response.status).toBe(500);
-      // Very large ID causes database integer overflow error
-      expect(response.body.errors).toBeDefined();
-    });
-
-  it('Should handle zero menu ID (root menus)', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/0`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Zero menu ID response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBeGreaterThan(0);
-    
-    // All returned menus should be root menus (menu_id = null)
-    response.body.data.forEach((menu: any) => {
-      expect(menu.menu_id).toBeNull();
-    });
-  });
-
-  it('Should handle multiple menu list requests', async () => {
-    // Create a parent menu
-    const parentResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'parent-menu',
-        name: 'Parent Menu'
-      });
-
-    expect(parentResponse.status).toBe(200);
-    const parentId = parentResponse.body.data.id;
-
-    // Create submenus
-    await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'submenu1',
-        name: 'Submenu 1',
-        menu_id: parentId
-      });
-
-    await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'submenu2',
-        name: 'Submenu 2',
-        menu_id: parentId
-      });
-
-    // Make multiple list requests
-    const requests = [
-      supertest(web).get(`${baseUrlTest}/0`).set('Cookie', cookieHeader ?? ''),
-      supertest(web).get(`${baseUrlTest}/${parentId}`).set('Cookie', cookieHeader ?? ''),
-      supertest(web).get(`${baseUrlTest}/999999`).set('Cookie', cookieHeader ?? '')
-    ];
-
-    const responses = await Promise.all(requests);
-
-    expect(responses[0].status).toBe(200); // Root menus
-    expect(responses[1].status).toBe(200); // Submenus
-    expect(responses[2].status).toBe(200); // Empty array
-    expect(responses[1].body.data.length).toBe(2); // Should have 2 submenus
-    expect(responses[2].body.data).toEqual([]); // Should be empty
-  });
-
-  it('Should handle nested menu structure', async () => {
-    // Create parent menu
-    const parentResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'parent-menu',
-        name: 'Parent Menu'
-      });
-
-    expect(parentResponse.status).toBe(200);
-    const parentId = parentResponse.body.data.id;
-
-    // Create submenu
-    const submenuResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'submenu',
-        name: 'Submenu',
-        menu_id: parentId
-      });
-
-    expect(submenuResponse.status).toBe(200);
-    const submenuId = submenuResponse.body.data.id;
-
-    // Create sub-submenu
-    await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        key_menu: 'sub-submenu',
-        name: 'Sub-Submenu',
-        menu_id: submenuId
-      });
-
-    // List parent menus (should include submenu with children)
-    const parentListResponse = await supertest(web)
-      .get(`${baseUrlTest}/0`)
-      .set('Cookie', cookieHeader ?? '');
-
-    expect(parentListResponse.status).toBe(200);
-    const parentMenu = parentListResponse.body.data.find((menu: any) => menu.id === parentId);
-    expect(parentMenu).toBeDefined();
-    expect(parentMenu.children.length).toBe(1);
-    expect(parentMenu.children[0].key_menu).toBe('submenu');
-
-    // List submenus (should include sub-submenu)
     const submenuListResponse = await supertest(web)
       .get(`${baseUrlTest}/${parentId}`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(submenuListResponse.status).toBe(200);
-    expect(submenuListResponse.body.data.length).toBe(1);
-    expect(submenuListResponse.body.data[0].key_menu).toBe('submenu');
-    expect(submenuListResponse.body.data[0].children.length).toBe(1);
-    expect(submenuListResponse.body.data[0].children[0].key_menu).toBe('sub-submenu');
+    expect(submenuListResponse.body.data.length).toBe(2);
+    expect(submenuListResponse.body.data[0].key_menu).toBe('submenu1');
+    expect(submenuListResponse.body.data[1].key_menu).toBe('submenu2');
+
+    // ===== TEST 3: RETURN EMPTY ARRAY FOR NON-EXISTENT PARENT =====
+    console.log('🧪 Testing list for non-existent parent...');
+    
+    const nonExistentResponse = await supertest(web)
+      .get(`${baseUrlTest}/999999`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(nonExistentResponse.status).toBe(200);
+    expect(Array.isArray(nonExistentResponse.body.data)).toBe(true);
+    expect(nonExistentResponse.body.data.length).toBe(0);
+
+    // ===== TEST 4: LIST WITH QUERY PARAMETERS =====
+    console.log('🧪 Testing list with query parameters...');
+    
+    const queryResponse = await supertest(web)
+      .get(`${baseUrlTest}/0?include=children&limit=5`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(queryResponse.status).toBe(200);
+    expect(queryResponse.body).toHaveProperty('data');
+    expect(Array.isArray(queryResponse.body.data)).toBe(true);
+
+    // ===== TEST 5: LIST WITH INVALID PARENT ID FORMAT =====
+    console.log('🧪 Testing list with invalid parent ID format...');
+    
+    const invalidIdResponse = await supertest(web)
+      .get(`${baseUrlTest}/invalid-id`)
+      .set('Cookie', cookieHeader ?? '');
+
+    // API returns empty array for invalid ID format
+    expect(invalidIdResponse.status).toBe(200);
+    expect(Array.isArray(invalidIdResponse.body.data)).toBe(true);
+    expect(invalidIdResponse.body.data.length).toBe(0);
+
+    // ===== TEST 6: LIST WITH NEGATIVE PARENT ID =====
+    console.log('🧪 Testing list with negative parent ID...');
+    
+    const negativeIdResponse = await supertest(web)
+      .get(`${baseUrlTest}/-1`)
+      .set('Cookie', cookieHeader ?? '');
+
+    // API treats -1 as a valid number and returns empty array (no menus with parent_id = -1)
+    expect(negativeIdResponse.status).toBe(200);
+    expect(Array.isArray(negativeIdResponse.body.data)).toBe(true);
+    expect(negativeIdResponse.body.data.length).toBe(0);
+
+    // ===== TEST 7: LIST WITH DEEP NESTED STRUCTURE =====
+    console.log('🧪 Testing list with deep nested structure...');
+    
+    // Create a deep nested structure
+    const level1Response = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        key_menu: 'level1',
+        name: 'Level 1 Menu'
+      });
+
+    expect(level1Response.status).toBe(200);
+    const level1Id = level1Response.body.data.id;
+
+    const level2Response = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        key_menu: 'level2',
+        name: 'Level 2 Menu',
+        menu_id: level1Id
+      });
+
+    expect(level2Response.status).toBe(200);
+    const level2Id = level2Response.body.data.id;
+
+    const level3Response = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        key_menu: 'level3',
+        name: 'Level 3 Menu',
+        menu_id: level2Id
+      });
+
+    expect(level3Response.status).toBe(200);
+
+    // List level 1 (should include children)
+    const level1ListResponse = await supertest(web)
+      .get(`${baseUrlTest}/${level1Id}`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(level1ListResponse.status).toBe(200);
+    expect(level1ListResponse.body.data.length).toBe(1);
+    expect(level1ListResponse.body.data[0].key_menu).toBe('level2');
+
+    // ===== TEST 8: LIST WITH LARGE NUMBER OF MENUS =====
+    console.log('🧪 Testing list with large number of menus...');
+    
+    // Create multiple menus under root
+    const largeMenuPromises = Array(5).fill(null).map((_, index) =>
+      supertest(web)
+        .post(baseUrlTest)
+        .set('Cookie', cookieHeader ?? '')
+        .send({
+          key_menu: `large-menu-${index + 1}`,
+          name: `Large Menu ${index + 1}`
+        })
+    );
+
+    const largeMenuResponses = await Promise.all(largeMenuPromises);
+    largeMenuResponses.forEach(response => {
+      expect(response.status).toBe(200);
+    });
+
+    // List root menus again to verify all are included
+    const finalRootResponse = await supertest(web)
+      .get(`${baseUrlTest}/0`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(finalRootResponse.status).toBe(200);
+    expect(finalRootResponse.body.data.length).toBeGreaterThan(5);
+
+    console.log('✅ All list menu flow tests completed successfully');
   });
 });

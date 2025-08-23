@@ -25,10 +25,10 @@ appManagementRouter.patch('/role/:id', validateUpdateRole, RoleController.update
 appManagementRouter.delete('/role/:id', validateDeleteRole, RoleController.destroy);
 
 // MENU
+appManagementRouter.get('/menu-structure', MenuController.getMenuStructure);
 appManagementRouter.get('/menu/:id', MenuController.index);
 appManagementRouter.get('/menu/:id/detail', MenuController.detail);
 appManagementRouter.get('/menu/:id/list-header', MenuController.listHeader);
-appManagementRouter.get('/menu-structure', MenuController.getMenuStructure);
 appManagementRouter.post('/menu', validateStoreMenu, MenuController.store);
 appManagementRouter.post('/menu/sort/:id', validateSortMenu, MenuController.sort);
 appManagementRouter.post('/menu/change-parent/:id', validateChangeParent, MenuController.changeParent);

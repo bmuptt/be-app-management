@@ -54,7 +54,7 @@ export class MenuController {
   ) {
     try {
       const nestedMenus = await MenuService.getAllNestedMenus();
-      res.status(200).json(nestedMenus);
+      res.status(200).json({ data: nestedMenus });
     } catch (e) {
       next(e);
     }

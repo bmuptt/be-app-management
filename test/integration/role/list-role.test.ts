@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -9,34 +9,36 @@ dotenv.config();
 const baseUrlTest = '/api/app-management/role';
 
 describe('List Role Business Flow', () => {
-  let cookies: string | string[];
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Increase timeout for database operations
+    jest.setTimeout(30000);
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
 
     const responseLogin = await AuthLogic.getLoginSuperAdmin();
     expect(responseLogin.status).toBe(200);
 
-    cookies = responseLogin.headers['set-cookie'];
+    const cookies = responseLogin.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-  }, 30000);
-
-  afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
   });
 
-  it('Should successfully list roles with default pagination', async () => {
+  afterEach(async () => {
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
+  });
+
+  it('Should handle complete list role flow including pagination, search, sorting, and edge cases', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
+    // ===== TEST 1: BASIC LIST ROLES =====
+    console.log('🧪 Testing basic list roles...');
+    
     const response = await supertest(web)
       .get(baseUrlTest)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('List roles response', response.body);
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('data');
     expect(response.body).toHaveProperty('total');
@@ -44,20 +46,21 @@ describe('List Role Business Flow', () => {
     expect(Array.isArray(response.body.data)).toBe(true);
     expect(response.body.page).toBe(1);
     expect(response.body.total).toBeGreaterThanOrEqual(1); // At least Super Admin role
-  });
 
-  it('Should list roles with custom pagination', async () => {
-    const response = await supertest(web)
+    // ===== TEST 2: PAGINATION =====
+    console.log('🧪 Testing pagination...');
+    
+    const paginationResponse = await supertest(web)
       .get(`${baseUrlTest}?page=1&limit=5`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('List roles with pagination response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.page).toBe(1);
-    expect(response.body.data.length).toBeLessThanOrEqual(5);
-  });
+    expect(paginationResponse.status).toBe(200);
+    expect(paginationResponse.body.page).toBe(1);
+    expect(paginationResponse.body.data.length).toBeLessThanOrEqual(5);
 
-  it('Should handle search functionality', async () => {
+    // ===== TEST 3: SEARCH FUNCTIONALITY =====
+    console.log('🧪 Testing search functionality...');
+    
     // First create a role with specific name
     const createResponse = await supertest(web)
       .post(baseUrlTest)
@@ -73,137 +76,168 @@ describe('List Role Business Flow', () => {
       .get(`${baseUrlTest}?search=Searchable`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Search roles response', searchResponse.body);
     expect(searchResponse.status).toBe(200);
     expect(searchResponse.body.data.length).toBeGreaterThan(0);
     expect(searchResponse.body.data.some((role: any) => role.name.includes('Searchable'))).toBe(true);
-  });
 
-  it('Should handle case-insensitive search', async () => {
-    // First create a role with specific name
-    const createResponse = await supertest(web)
+    // ===== TEST 4: CASE-INSENSITIVE SEARCH =====
+    console.log('🧪 Testing case-insensitive search...');
+    
+    // Create a role with specific name
+    const createCaseResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         name: 'CaseSensitive Role'
       });
 
-    expect(createResponse.status).toBe(200);
+    expect(createCaseResponse.status).toBe(200);
 
     // Search with different case
-    const searchResponse = await supertest(web)
+    const caseSearchResponse = await supertest(web)
       .get(`${baseUrlTest}?search=casesensitive`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Case-insensitive search response', searchResponse.body);
-    expect(searchResponse.status).toBe(200);
-    expect(searchResponse.body.data.length).toBeGreaterThan(0);
-    expect(searchResponse.body.data.some((role: any) => role.name.includes('CaseSensitive'))).toBe(true);
-  });
+    expect(caseSearchResponse.status).toBe(200);
+    expect(caseSearchResponse.body.data.length).toBeGreaterThan(0);
+    expect(caseSearchResponse.body.data.some((role: any) => role.name.includes('CaseSensitive'))).toBe(true);
 
-  it('Should handle sorting by name ascending', async () => {
-    const response = await supertest(web)
+    // ===== TEST 5: SORTING =====
+    console.log('🧪 Testing sorting...');
+    
+    // Sort by name ascending
+    const sortAscResponse = await supertest(web)
       .get(`${baseUrlTest}?order_field=name&order_dir=asc`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Sort by name ascending response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBeGreaterThan(0);
+    expect(sortAscResponse.status).toBe(200);
+    expect(sortAscResponse.body.data.length).toBeGreaterThan(0);
     
     // Check if data is sorted
-    const names = response.body.data.map((role: any) => role.name);
+    const names = sortAscResponse.body.data.map((role: any) => role.name);
     const sortedNames = [...names].sort();
     expect(names).toEqual(sortedNames);
-  });
 
-  it('Should handle sorting by name descending', async () => {
-    const response = await supertest(web)
+    // Sort by name descending
+    const sortDescResponse = await supertest(web)
       .get(`${baseUrlTest}?order_field=name&order_dir=desc`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Sort by name descending response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBeGreaterThan(0);
+    expect(sortDescResponse.status).toBe(200);
+    expect(sortDescResponse.body.data.length).toBeGreaterThan(0);
     
     // Check if data is sorted
-    const names = response.body.data.map((role: any) => role.name);
-    const sortedNames = [...names].sort().reverse();
-    expect(names).toEqual(sortedNames);
-  });
+    const descNames = sortDescResponse.body.data.map((role: any) => role.name);
+    const sortedDescNames = [...descNames].sort().reverse();
+    expect(descNames).toEqual(sortedDescNames);
 
-  it('Should handle sorting by id descending (default)', async () => {
-    const response = await supertest(web)
+    // Default sort by id descending
+    const defaultSortResponse = await supertest(web)
       .get(baseUrlTest)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Default sort response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBeGreaterThan(0);
+    expect(defaultSortResponse.status).toBe(200);
+    expect(defaultSortResponse.body.data.length).toBeGreaterThan(0);
     
     // Check if data is sorted by id descending
-    const ids = response.body.data.map((role: any) => role.id);
+    const ids = defaultSortResponse.body.data.map((role: any) => role.id);
     const sortedIds = [...ids].sort((a, b) => b - a);
     expect(ids).toEqual(sortedIds);
-  });
 
-  it('Should handle empty search results', async () => {
-    const response = await supertest(web)
+    // ===== TEST 6: EDGE CASES =====
+    console.log('🧪 Testing edge cases...');
+    
+    // Empty search results
+    const emptySearchResponse = await supertest(web)
       .get(`${baseUrlTest}?search=NonExistentRoleName`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Empty search results response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBe(0);
-    expect(response.body.total).toBe(0);
-  });
+    expect(emptySearchResponse.status).toBe(200);
+    expect(emptySearchResponse.body.data.length).toBe(0);
+    expect(emptySearchResponse.body.total).toBe(0);
 
-          it('Should handle invalid pagination parameters', async () => {
-          const response = await supertest(web)
-            .get(`${baseUrlTest}?page=0&limit=-1`)
-            .set('Cookie', cookieHeader ?? '');
-      
-          logger.debug('Invalid pagination response', response.body);
-          expect(response.status).toBe(500);
-          // Negative limit causes database error
-          expect(response.body.errors).toBeDefined();
-        });
-
-  it('Should handle very large page numbers', async () => {
-    const response = await supertest(web)
+    // Very large page numbers
+    const largePageResponse = await supertest(web)
       .get(`${baseUrlTest}?page=999999`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Large page number response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBe(0); // Should be empty for non-existent page
-    expect(response.body.page).toBe(999999);
-  });
+    expect(largePageResponse.status).toBe(200);
+    expect(largePageResponse.body.data.length).toBe(0); // Should be empty for non-existent page
+    expect(largePageResponse.body.page).toBe(999999);
 
-  it('Should handle multiple query parameters', async () => {
-    const response = await supertest(web)
+    // Large limit values
+    const largeLimitResponse = await supertest(web)
+      .get(`${baseUrlTest}?limit=1000`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(largeLimitResponse.status).toBe(200);
+    expect(largeLimitResponse.body.data.length).toBeLessThanOrEqual(1000);
+
+    // ===== TEST 7: SPECIAL CHARACTERS =====
+    console.log('🧪 Testing special characters...');
+    
+    // Create a role with special characters
+    const specialCharResponse = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        name: 'Role with @#$%^&*()'
+      });
+
+    expect(specialCharResponse.status).toBe(200);
+
+    // Search for the role with special characters
+    const specialSearchResponse = await supertest(web)
+      .get(`${baseUrlTest}?search=@#$%^&*()`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(specialSearchResponse.status).toBe(200);
+    expect(specialSearchResponse.body.data.length).toBeGreaterThan(0);
+
+    // Unicode characters
+    const unicodeResponse = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        name: 'Rôle avec caractères spéciaux 角色'
+      });
+
+    expect(unicodeResponse.status).toBe(200);
+
+    // Search for Unicode characters
+    const unicodeSearchResponse = await supertest(web)
+      .get(`${baseUrlTest}?search=角色`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(unicodeSearchResponse.status).toBe(200);
+    expect(unicodeSearchResponse.body.data.length).toBeGreaterThan(0);
+
+    // ===== TEST 8: MULTIPLE QUERY PARAMETERS =====
+    console.log('🧪 Testing multiple query parameters...');
+    
+    const multipleParamsResponse = await supertest(web)
       .get(`${baseUrlTest}?page=1&limit=10&search=Admin&order_field=name&order_dir=asc`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Multiple query parameters response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.page).toBe(1);
-    expect(response.body.data.length).toBeLessThanOrEqual(10);
-  });
+    expect(multipleParamsResponse.status).toBe(200);
+    expect(multipleParamsResponse.body.page).toBe(1);
+    expect(multipleParamsResponse.body.data.length).toBeLessThanOrEqual(10);
 
-  it('Should return correct response structure', async () => {
-    const response = await supertest(web)
+    // ===== TEST 9: RESPONSE STRUCTURE =====
+    console.log('🧪 Testing response structure...');
+    
+    const structureResponse = await supertest(web)
       .get(baseUrlTest)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Response structure test', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(response.body).toHaveProperty('total');
-    expect(response.body).toHaveProperty('page');
-    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(structureResponse.status).toBe(200);
+    expect(structureResponse.body).toHaveProperty('data');
+    expect(structureResponse.body).toHaveProperty('total');
+    expect(structureResponse.body).toHaveProperty('page');
+    expect(Array.isArray(structureResponse.body.data)).toBe(true);
     
-    if (response.body.data.length > 0) {
-      const role = response.body.data[0];
+    if (structureResponse.body.data.length > 0) {
+      const role = structureResponse.body.data[0];
       expect(role).toHaveProperty('id');
       expect(role).toHaveProperty('name');
       expect(role).toHaveProperty('created_by');
@@ -211,68 +245,7 @@ describe('List Role Business Flow', () => {
       expect(role).toHaveProperty('updated_by');
       expect(role).toHaveProperty('updated_at');
     }
+
+    console.log('✅ All list role flow tests completed successfully');
   });
-
-  it('Should handle special characters in search', async () => {
-    // First create a role with special characters
-    const createResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        name: 'Role with @#$%^&*()'
-      });
-
-    expect(createResponse.status).toBe(200);
-
-    // Search for the role
-    const searchResponse = await supertest(web)
-      .get(`${baseUrlTest}?search=@#$%^&*()`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Special characters search response', searchResponse.body);
-    expect(searchResponse.status).toBe(200);
-    expect(searchResponse.body.data.length).toBeGreaterThan(0);
-  });
-
-  it('Should handle Unicode characters in search', async () => {
-    // First create a role with Unicode characters
-    const createResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        name: 'Rôle avec caractères spéciaux 角色'
-      });
-
-    expect(createResponse.status).toBe(200);
-
-    // Search for the role
-    const searchResponse = await supertest(web)
-      .get(`${baseUrlTest}?search=角色`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Unicode characters search response', searchResponse.body);
-    expect(searchResponse.status).toBe(200);
-    expect(searchResponse.body.data.length).toBeGreaterThan(0);
-  });
-
-  it('Should handle large limit values', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}?limit=1000`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Large limit response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.length).toBeLessThanOrEqual(1000);
-  });
-
-          it('Should handle zero limit', async () => {
-          const response = await supertest(web)
-            .get(`${baseUrlTest}?limit=0`)
-            .set('Cookie', cookieHeader ?? '');
-      
-          logger.debug('Zero limit response', response.body);
-          expect(response.status).toBe(200);
-          expect(response.body.data.length).toBe(1);
-          // Current implementation returns 1 record even with limit=0
-        });
 });

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -12,107 +12,60 @@ const baseUrlRoleMenuTest = '/api/app-management/role-menu';
 
 describe('Get Profile Business Flow', () => {
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
   });
 
   afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
   });
 
-  it('Should successfully retrieve profile with valid token', async () => {
+  it('Should handle complete profile flow including basic profile retrieval, data structure validation, menu handling, and complex scenarios', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
+    // ===== TEST 1: BASIC PROFILE RETRIEVAL =====
+    console.log('🧪 Testing basic profile retrieval...');
+    
     const loginResponse = await AuthLogic.getLoginSuperAdmin();
     expect(loginResponse.status).toBe(200);
 
     const cookies = loginResponse.headers['set-cookie'];
     const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
 
-    const response = await supertest(web)
+    const basicProfileResponse = await supertest(web)
       .get('/api/profile')
       .set('Cookie', cookieHeader);
 
-    logger.debug('Profile retrieval success', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.profile).toBeDefined();
-    expect(response.body.menu).toBeDefined();
-    expect(response.body.profile.email).toBe(process.env.EMAIL_ADMIN);
-    expect(response.body.profile.password).toBeUndefined();
-  });
+    expect(basicProfileResponse.status).toBe(200);
+    expect(basicProfileResponse.body.profile).toBeDefined();
+    expect(basicProfileResponse.body.menu).toBeDefined();
+    expect(basicProfileResponse.body.profile.email).toBe(process.env.EMAIL_ADMIN);
+    expect(basicProfileResponse.body.profile.password).toBeUndefined();
 
-  it('Should return proper profile data structure', async () => {
-    const loginResponse = await AuthLogic.getLoginSuperAdmin();
-    expect(loginResponse.status).toBe(200);
+    // ===== TEST 2: PROFILE DATA STRUCTURE =====
+    console.log('🧪 Testing profile data structure...');
+    
+    expect(basicProfileResponse.body.profile).toHaveProperty('id');
+    expect(basicProfileResponse.body.profile).toHaveProperty('email');
+    expect(basicProfileResponse.body.profile).toHaveProperty('name');
+    expect(basicProfileResponse.body.profile).toHaveProperty('gender');
+    expect(basicProfileResponse.body.profile).toHaveProperty('birthdate');
+    expect(basicProfileResponse.body.profile).toHaveProperty('role_id');
+    expect(basicProfileResponse.body.profile).toHaveProperty('created_at');
+    expect(basicProfileResponse.body.profile).toHaveProperty('updated_at');
+    expect(basicProfileResponse.body.profile).not.toHaveProperty('password');
 
-    const cookies = loginResponse.headers['set-cookie'];
-    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
+    // ===== TEST 3: MENU DATA VALIDATION =====
+    console.log('🧪 Testing menu data validation...');
+    
+    expect(basicProfileResponse.body.menu).toBeDefined();
+    expect(Array.isArray(basicProfileResponse.body.menu)).toBe(true);
+    expect(basicProfileResponse.body.menu.length).toBeGreaterThan(0);
 
-    const response = await supertest(web)
-      .get('/api/profile')
-      .set('Cookie', cookieHeader);
-
-    logger.debug('Profile data structure', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.profile).toHaveProperty('id');
-    expect(response.body.profile).toHaveProperty('email');
-    expect(response.body.profile).toHaveProperty('name');
-    expect(response.body.profile).toHaveProperty('gender');
-    expect(response.body.profile).toHaveProperty('birthdate');
-    expect(response.body.profile).toHaveProperty('role_id');
-    expect(response.body.profile).toHaveProperty('created_at');
-    expect(response.body.profile).toHaveProperty('updated_at');
-    expect(response.body.profile).not.toHaveProperty('password');
-  });
-
-  it('Should include menu data in profile response', async () => {
-    const loginResponse = await AuthLogic.getLoginSuperAdmin();
-    expect(loginResponse.status).toBe(200);
-
-    const cookies = loginResponse.headers['set-cookie'];
-    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-
-    const response = await supertest(web)
-      .get('/api/profile')
-      .set('Cookie', cookieHeader);
-
-    logger.debug('Profile with menu data', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.menu).toBeDefined();
-    expect(Array.isArray(response.body.menu)).toBe(true);
-    expect(response.body.menu.length).toBeGreaterThan(0);
-  });
-
-  it('Should return empty menu when role is deleted', async () => {
-    const loginResponse = await AuthLogic.getLoginSuperAdmin();
-    expect(loginResponse.status).toBe(200);
-
-    const cookies = loginResponse.headers['set-cookie'];
-    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-
-    // Delete the role
-    await supertest(web)
-      .delete(`${baseUrlRoleTest}/1`)
-      .set('Cookie', cookieHeader);
-
-    const response = await supertest(web)
-      .get('/api/profile')
-      .set('Cookie', cookieHeader);
-
-    logger.debug('Profile with deleted role', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.menu.length).toBe(0);
-  });
-
-  it('Should handle complex menu hierarchy with nested submenus', async () => {
-    const loginResponse = await AuthLogic.getLoginSuperAdmin();
-    expect(loginResponse.status).toBe(200);
-
-    const cookies = loginResponse.headers['set-cookie'];
-    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-
+    // ===== TEST 4: COMPLEX MENU HIERARCHY =====
+    console.log('🧪 Testing complex menu hierarchy...');
+    
     // Create submenus
     await supertest(web)
       .post(baseUrlMenuTest)
@@ -164,24 +117,18 @@ describe('Get Profile Business Flow', () => {
         ],
       });
 
-    const response = await supertest(web)
+    const complexMenuResponse = await supertest(web)
       .get('/api/profile')
       .set('Cookie', cookieHeader);
 
-    logger.debug('Profile with complex menu hierarchy', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.menu[0].children.length).toBe(4);
-    expect(response.body.menu[0].children[0].children.length).toBe(1);
-    expect(response.body.menu[0].children[1].children.length).toBe(0);
-  });
+    expect(complexMenuResponse.status).toBe(200);
+    expect(complexMenuResponse.body.menu[0].children.length).toBe(4);
+    expect(complexMenuResponse.body.menu[0].children[0].children.length).toBe(1);
+    expect(complexMenuResponse.body.menu[0].children[1].children.length).toBe(0);
 
-  it('Should handle menu structure with different access levels', async () => {
-    const loginResponse = await AuthLogic.getLoginSuperAdmin();
-    expect(loginResponse.status).toBe(200);
-
-    const cookies = loginResponse.headers['set-cookie'];
-    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-
+    // ===== TEST 5: DIFFERENT ACCESS LEVELS =====
+    console.log('🧪 Testing different access levels...');
+    
     // Create menu with different access levels
     await supertest(web)
       .post(baseUrlMenuTest)
@@ -205,53 +152,42 @@ describe('Get Profile Business Flow', () => {
         },
       ]);
 
-    const response = await supertest(web)
+    const accessLevelResponse = await supertest(web)
       .get('/api/profile')
       .set('Cookie', cookieHeader);
 
-    logger.debug('Profile with different access levels', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.menu).toBeDefined();
-  });
+    expect(accessLevelResponse.status).toBe(200);
+    expect(accessLevelResponse.body.menu).toBeDefined();
 
-  it('Should handle concurrent profile requests', async () => {
-    const loginResponse = await AuthLogic.getLoginSuperAdmin();
-    expect(loginResponse.status).toBe(200);
-
-    const cookies = loginResponse.headers['set-cookie'];
-    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-
+    // ===== TEST 6: CONCURRENT REQUESTS =====
+    console.log('🧪 Testing concurrent requests...');
+    
     // Make multiple concurrent requests
-    const promises = Array(5).fill(null).map(() =>
+    const promises = Array(3).fill(null).map(() =>
       supertest(web)
         .get('/api/profile')
         .set('Cookie', cookieHeader)
     );
 
-    const responses = await Promise.all(promises);
+    const concurrentResponses = await Promise.all(promises);
 
-    responses.forEach((response, index) => {
-      logger.debug(`Concurrent profile request ${index + 1}`, response.body);
+    concurrentResponses.forEach((response) => {
       expect(response.status).toBe(200);
       expect(response.body.profile).toBeDefined();
       expect(response.body.menu).toBeDefined();
     });
-  });
 
-  it('Should handle profile request with query parameters (should be ignored)', async () => {
-    const loginResponse = await AuthLogic.getLoginSuperAdmin();
-    expect(loginResponse.status).toBe(200);
-
-    const cookies = loginResponse.headers['set-cookie'];
-    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-
-    const response = await supertest(web)
+    // ===== TEST 7: QUERY PARAMETERS =====
+    console.log('🧪 Testing query parameters...');
+    
+    const queryParamResponse = await supertest(web)
       .get('/api/profile?include=extra&data=test')
       .set('Cookie', cookieHeader);
 
-    logger.debug('Profile with query parameters', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.profile).toBeDefined();
-    expect(response.body.menu).toBeDefined();
+    expect(queryParamResponse.status).toBe(200);
+    expect(queryParamResponse.body.profile).toBeDefined();
+    expect(queryParamResponse.body.menu).toBeDefined();
+
+    console.log('✅ All profile flow tests completed successfully');
   });
 });

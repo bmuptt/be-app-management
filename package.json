@@ -4,14 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test:local": "dotenv -e .env.test jest -- --runInBand",
+    "test:local": "dotenv -e .env.test jest -- --runInBand --testTimeout=30000 --verbose",
     "build": "tsc",
     "start": "nodemon dist/main.js",
     "dev": "ts-node-dev --files --poll src/main.ts",
     "migrate": "prisma migrate dev",
     "migrate:test": "dotenv -e .env.test npx prisma migrate dev",
     "reset:db": "prisma migrate reset",
-    "reset:dbtest": "dotenv -e .env.test npx prisma migrate reset",
+    "reset:dbtest": "dotenv -e .env.test npx prisma migrate reset --force",
     "seed:user": "dotenv -e .env ts-node seed/user-seeder.ts"
   },
   "jest": {

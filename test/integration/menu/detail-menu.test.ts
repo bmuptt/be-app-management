@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -9,29 +9,33 @@ dotenv.config();
 const baseUrlTest = '/api/app-management/menu';
 
 describe('Menu Detail Business Flow', () => {
-  let cookies: string | string[];
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Increase timeout for database operations
+    jest.setTimeout(30000);
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
 
     const responseLogin = await AuthLogic.getLoginSuperAdmin();
     expect(responseLogin.status).toBe(200);
 
-    cookies = responseLogin.headers['set-cookie'];
+    const cookies = responseLogin.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-  }, 30000);
-
-  afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
   });
 
-  it('Should successfully retrieve menu detail', async () => {
+  afterEach(async () => {
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
+  });
+
+  it('Should handle complete menu detail flow including validation, edge cases, and response structure', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
+
+    // ===== TEST 1: SUCCESSFUL MENU DETAIL RETRIEVAL =====
+    console.log('🧪 Testing successful menu detail retrieval...');
+    
     // Create a test menu first
     const createResponse = await supertest(web)
       .post(baseUrlTest)
@@ -45,83 +49,83 @@ describe('Menu Detail Business Flow', () => {
     const menuId = createResponse.body.data.id;
 
     // Get menu detail
-    const response = await supertest(web)
+    const detailResponse = await supertest(web)
       .get(`${baseUrlTest}/${menuId}/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Menu detail response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toBeDefined();
-    expect(response.body.data.id).toBe(menuId);
-    expect(response.body.data.key_menu).toBe('test-menu');
-    expect(response.body.data.name).toBe('Test Menu');
-    expect(response.body.data.menu_id).toBe(null);
-    expect(response.body.data.active).toBe('Active');
-    expect(response.body.data.created_at).toBeDefined();
-    expect(response.body.data.updated_at).toBeDefined();
-  });
+    expect(detailResponse.status).toBe(200);
+    expect(detailResponse.body.data).toBeDefined();
+    expect(detailResponse.body.data.id).toBe(menuId);
+    expect(detailResponse.body.data.key_menu).toBe('test-menu');
+    expect(detailResponse.body.data.name).toBe('Test Menu');
+    expect(detailResponse.body.data.menu_id).toBe(null);
+    expect(detailResponse.body.data.active).toBe('Active');
+    expect(detailResponse.body.data.created_at).toBeDefined();
+    expect(detailResponse.body.data.updated_at).toBeDefined();
 
-  it('Should return 404 for non-existent menu ID', async () => {
-    const response = await supertest(web)
+    // ===== TEST 2: NON-EXISTENT MENU ID =====
+    console.log('🧪 Testing non-existent menu ID...');
+    
+    const nonExistentResponse = await supertest(web)
       .get(`${baseUrlTest}/999/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Non-existent menu detail response', response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
+    expect(nonExistentResponse.status).toBe(404);
+    expect(nonExistentResponse.body.errors).toBeDefined();
 
-  it('Should handle negative menu ID', async () => {
-    const response = await supertest(web)
+    // ===== TEST 3: NEGATIVE MENU ID =====
+    console.log('🧪 Testing negative menu ID...');
+    
+    const negativeIdResponse = await supertest(web)
       .get(`${baseUrlTest}/-1/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Negative menu ID response', response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
+    expect(negativeIdResponse.status).toBe(404);
+    expect(negativeIdResponse.body.errors).toBeDefined();
 
-  it('Should handle zero menu ID', async () => {
-    const response = await supertest(web)
+    // ===== TEST 4: ZERO MENU ID =====
+    console.log('🧪 Testing zero menu ID...');
+    
+    const zeroIdResponse = await supertest(web)
       .get(`${baseUrlTest}/0/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Zero menu ID response', response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
+    expect(zeroIdResponse.status).toBe(404);
+    expect(zeroIdResponse.body.errors).toBeDefined();
 
-  it('Should handle very large menu ID', async () => {
-    const response = await supertest(web)
+    // ===== TEST 5: VERY LARGE MENU ID =====
+    console.log('🧪 Testing very large menu ID...');
+    
+    const largeIdResponse = await supertest(web)
       .get(`${baseUrlTest}/999999999999/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Very large menu ID response', response.body);
-    expect(response.status).toBe(500);
-    expect(response.body.errors).toBeDefined();
-  });
+    expect(largeIdResponse.status).toBe(500);
+    expect(largeIdResponse.body.errors).toBeDefined();
 
-  it('Should handle decimal menu ID', async () => {
-    const response = await supertest(web)
+    // ===== TEST 6: DECIMAL MENU ID =====
+    console.log('🧪 Testing decimal menu ID...');
+    
+    const decimalIdResponse = await supertest(web)
       .get(`${baseUrlTest}/999.5/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Decimal menu ID response', response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toBeDefined();
-  });
+    expect(decimalIdResponse.status).toBe(404);
+    expect(decimalIdResponse.body.errors).toBeDefined();
 
-  it('Should handle invalid menu ID format', async () => {
-    const response = await supertest(web)
+    // ===== TEST 7: INVALID MENU ID FORMAT =====
+    console.log('🧪 Testing invalid menu ID format...');
+    
+    const invalidIdResponse = await supertest(web)
       .get(`${baseUrlTest}/invalid/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Invalid menu ID format response', response.body);
-    expect(response.status).toBe(500);
-    expect(response.body.errors).toBeDefined();
-  });
+    expect(invalidIdResponse.status).toBe(500);
+    expect(invalidIdResponse.body.errors).toBeDefined();
 
-  it('Should handle menu with submenus', async () => {
+    // ===== TEST 8: MENU WITH SUBMENUS =====
+    console.log('🧪 Testing menu with submenus...');
+    
     // Create parent menu
     const parentResponse = await supertest(web)
       .post(baseUrlTest)
@@ -152,7 +156,6 @@ describe('Menu Detail Business Flow', () => {
       .get(`${baseUrlTest}/${parentId}/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Parent menu detail response', parentDetailResponse.body);
     expect(parentDetailResponse.status).toBe(200);
     expect(parentDetailResponse.body.data.id).toBe(parentId);
     expect(parentDetailResponse.body.data.key_menu).toBe('parent-menu');
@@ -164,69 +167,68 @@ describe('Menu Detail Business Flow', () => {
       .get(`${baseUrlTest}/${submenuId}/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Submenu detail response', submenuDetailResponse.body);
     expect(submenuDetailResponse.status).toBe(200);
     expect(submenuDetailResponse.body.data.id).toBe(submenuId);
     expect(submenuDetailResponse.body.data.key_menu).toBe('submenu');
     expect(submenuDetailResponse.body.data.name).toBe('Submenu');
     expect(submenuDetailResponse.body.data.menu_id).toBe(parentId);
-  });
 
-  it('Should handle inactive menu', async () => {
-    // Create a test menu
-    const createResponse = await supertest(web)
+    // ===== TEST 9: INACTIVE MENU =====
+    console.log('🧪 Testing inactive menu...');
+    
+    // Create a test menu for deactivation
+    const inactiveMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        key_menu: 'test-menu',
-        name: 'Test Menu'
+        key_menu: 'inactive-menu',
+        name: 'Inactive Menu'
       });
 
-    expect(createResponse.status).toBe(200);
-    const menuId = createResponse.body.data.id;
+    expect(inactiveMenuResponse.status).toBe(200);
+    const inactiveMenuId = inactiveMenuResponse.body.data.id;
 
     // Deactivate the menu
     const deactivateResponse = await supertest(web)
-      .delete(`${baseUrlTest}/${menuId}`)
+      .delete(`${baseUrlTest}/${inactiveMenuId}`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(deactivateResponse.status).toBe(200);
 
     // Get menu detail (should still work even if inactive)
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/detail`)
+    const inactiveDetailResponse = await supertest(web)
+      .get(`${baseUrlTest}/${inactiveMenuId}/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Inactive menu detail response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.id).toBe(menuId);
-    expect(response.body.data.active).toBe('Inactive');
-  });
+    expect(inactiveDetailResponse.status).toBe(200);
+    expect(inactiveDetailResponse.body.data.id).toBe(inactiveMenuId);
+    expect(inactiveDetailResponse.body.data.active).toBe('Inactive');
 
-  it('Should return correct response structure', async () => {
-    // Create a test menu
-    const createResponse = await supertest(web)
+    // ===== TEST 10: RESPONSE STRUCTURE VALIDATION =====
+    console.log('🧪 Testing response structure validation...');
+    
+    // Create a test menu for structure validation
+    const structureMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        key_menu: 'test-menu',
-        name: 'Test Menu'
+        key_menu: 'structure-menu',
+        name: 'Structure Menu'
       });
 
-    expect(createResponse.status).toBe(200);
-    const menuId = createResponse.body.data.id;
+    expect(structureMenuResponse.status).toBe(200);
+    const structureMenuId = structureMenuResponse.body.data.id;
 
     // Get menu detail
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/detail`)
+    const structureResponse = await supertest(web)
+      .get(`${baseUrlTest}/${structureMenuId}/detail`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Response structure test', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(response.body).not.toHaveProperty('errors');
+    expect(structureResponse.status).toBe(200);
+    expect(structureResponse.body).toHaveProperty('data');
+    expect(structureResponse.body).not.toHaveProperty('errors');
     
-    const menuData = response.body.data;
+    const menuData = structureResponse.body.data;
     expect(menuData).toHaveProperty('id');
     expect(menuData).toHaveProperty('key_menu');
     expect(menuData).toHaveProperty('name');
@@ -235,44 +237,41 @@ describe('Menu Detail Business Flow', () => {
     expect(menuData).toHaveProperty('active');
     expect(menuData).toHaveProperty('created_at');
     expect(menuData).toHaveProperty('updated_at');
-  });
 
-  it('Should handle multiple detail requests for same menu', async () => {
-    // Create a test menu
-    const createResponse = await supertest(web)
+    // ===== TEST 11: MULTIPLE DETAIL REQUESTS FOR SAME MENU =====
+    console.log('🧪 Testing multiple detail requests for same menu...');
+    
+    // Create a test menu for multiple requests
+    const multipleMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        key_menu: 'test-menu',
-        name: 'Test Menu'
+        key_menu: 'multiple-menu',
+        name: 'Multiple Menu'
       });
 
-    expect(createResponse.status).toBe(200);
-    const menuId = createResponse.body.data.id;
+    expect(multipleMenuResponse.status).toBe(200);
+    const multipleMenuId = multipleMenuResponse.body.data.id;
 
     // Make multiple detail requests
     const response1 = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/detail`)
+      .get(`${baseUrlTest}/${multipleMenuId}/detail`)
       .set('Cookie', cookieHeader ?? '');
 
     const response2 = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/detail`)
+      .get(`${baseUrlTest}/${multipleMenuId}/detail`)
       .set('Cookie', cookieHeader ?? '');
 
     const response3 = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/detail`)
+      .get(`${baseUrlTest}/${multipleMenuId}/detail`)
       .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Multiple detail requests test', {
-      response1: response1.body,
-      response2: response2.body,
-      response3: response3.body
-    });
 
     expect(response1.status).toBe(200);
     expect(response2.status).toBe(200);
     expect(response3.status).toBe(200);
     expect(response1.body.data.id).toBe(response2.body.data.id);
     expect(response2.body.data.id).toBe(response3.body.data.id);
+
+    console.log('✅ All menu detail flow tests completed successfully');
   });
 });

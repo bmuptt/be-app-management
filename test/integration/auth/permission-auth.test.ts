@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -9,67 +9,65 @@ dotenv.config();
 const baseUrlTest = '/api/permission';
 
 describe('Permission Auth Business Flow', () => {
-  let cookies: string | string[];
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Increase timeout for database operations
+    jest.setTimeout(30000);
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
 
     const responseLogin = await AuthLogic.getLoginSuperAdmin();
     expect(responseLogin.status).toBe(200);
 
-    cookies = responseLogin.headers['set-cookie'];
+    const cookies = responseLogin.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-  }, 30000);
+  });
 
   afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
   });
 
-  it('Should return 401 when accessing permission without authentication', async () => {
-    const response = await supertest(web).get(baseUrlTest);
+  it('Should handle complete permission flow including authentication, validation, and different menu permissions', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
+    // ===== TEST 1: AUTHENTICATION =====
+    console.log('🧪 Testing permission authentication...');
+    
+    // Should return 401 when accessing permission without authentication
+    const noAuthResponse = await supertest(web).get(baseUrlTest);
+    expect(noAuthResponse.status).toBe(401);
 
-    logger.debug('Permission without auth response', response.body);
-    expect(response.status).toBe(401);
-  });
-
-  it('Should return 400 when key_menu parameter is missing', async () => {
-    const response = await supertest(web)
+    // ===== TEST 2: VALIDATION =====
+    console.log('🧪 Testing permission validation...');
+    
+    // Should return 400 when key_menu parameter is missing
+    const missingParamResponse = await supertest(web)
       .get(baseUrlTest)
       .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Permission missing key_menu response', response.body);
-    expect(response.body.errors).toEqual(
+    expect(missingParamResponse.status).toBe(400);
+    expect(missingParamResponse.body.errors).toEqual(
       expect.arrayContaining(['The key menu is required!'])
     );
-    expect(response.status).toBe(400);
-  });
 
-  it('Should return 400 when key_menu parameter is empty', async () => {
-    const response = await supertest(web)
+    // Should return 400 when key_menu parameter is empty
+    const emptyParamResponse = await supertest(web)
       .get(`${baseUrlTest}?key_menu=`)
       .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Permission empty key_menu response', response.body);
-    expect(response.body.errors).toEqual(
+    expect(emptyParamResponse.status).toBe(400);
+    expect(emptyParamResponse.body.errors).toEqual(
       expect.arrayContaining(['The key menu is required!'])
     );
-    expect(response.status).toBe(400);
-  });
 
-  it('Should return default permissions when menu does not exist', async () => {
-    const response = await supertest(web)
+    // ===== TEST 3: NONEXISTENT MENU =====
+    console.log('🧪 Testing nonexistent menu permissions...');
+    
+    const nonexistentResponse = await supertest(web)
       .get(`${baseUrlTest}?key_menu=nonexistent_menu`)
       .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Permission nonexistent menu response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data).toEqual({
+    expect(nonexistentResponse.status).toBe(200);
+    expect(nonexistentResponse.body.data).toEqual({
       access: false,
       create: false,
       update: false,
@@ -78,22 +76,21 @@ describe('Permission Auth Business Flow', () => {
       approve2: false,
       approve3: false,
     });
-  });
 
-  it('Should return correct permissions for existing menu with role', async () => {
-    const response = await supertest(web)
+    // ===== TEST 4: EXISTING MENU PERMISSIONS =====
+    console.log('🧪 Testing existing menu permissions...');
+    
+    const userMenuResponse = await supertest(web)
       .get(`${baseUrlTest}?key_menu=user`)
       .set('Cookie', cookieHeader ?? '');
+    expect(userMenuResponse.status).toBe(200);
+    expect(userMenuResponse.body.data.access).toBe(true);
+    expect(userMenuResponse.body.data.create).toBe(true);
+    expect(userMenuResponse.body.message).toBe('Success to get permission.');
 
-    logger.debug('Permission with role response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.access).toBe(true);
-    expect(response.body.data.create).toBe(true);
-    expect(response.body.message).toBe('Success to get permission.');
-  });
-
-  it('Should return correct permissions for different menu keys', async () => {
-    // Test with different menu keys
+    // ===== TEST 5: MULTIPLE MENU KEYS =====
+    console.log('🧪 Testing multiple menu keys...');
+    
     const testCases = [
       { key_menu: 'user', expectedAccess: true },
       { key_menu: 'role', expectedAccess: true },
@@ -105,21 +102,21 @@ describe('Permission Auth Business Flow', () => {
       const response = await supertest(web)
         .get(`${baseUrlTest}?key_menu=${testCase.key_menu}`)
         .set('Cookie', cookieHeader ?? '');
-
-      logger.debug(`Permission for ${testCase.key_menu}`, response.body);
+      
       expect(response.status).toBe(200);
       expect(response.body.data.access).toBe(testCase.expectedAccess);
     }
-  });
 
-  it('Should return success message in response', async () => {
-    const response = await supertest(web)
+    // ===== TEST 6: SUCCESS MESSAGE =====
+    console.log('🧪 Testing success message...');
+    
+    const successResponse = await supertest(web)
       .get(`${baseUrlTest}?key_menu=user`)
       .set('Cookie', cookieHeader ?? '');
+    expect(successResponse.status).toBe(200);
+    expect(successResponse.body.message).toBe('Success to get permission.');
+    expect(successResponse.body.data).toBeDefined();
 
-    logger.debug('Permission success message response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Success to get permission.');
-    expect(response.body.data).toBeDefined();
+    console.log('✅ All permission flow tests completed successfully');
   });
 });

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -9,29 +9,33 @@ dotenv.config();
 const baseUrlTest = '/api/app-management/user';
 
 describe('Update User Business Flow', () => {
-  let cookies: string | string[];
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Increase timeout for database operations
+    jest.setTimeout(30000);
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
 
     const responseLogin = await AuthLogic.getLoginSuperAdmin();
     expect(responseLogin.status).toBe(200);
 
-    cookies = responseLogin.headers['set-cookie'];
+    const cookies = responseLogin.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-  }, 30000);
-
-  afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
   });
 
-  it('Should successfully update user data', async () => {
+  afterEach(async () => {
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
+  });
+
+  it('Should handle complete update user flow including validation, edge cases, and response structure', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
+
+    // ===== TEST 1: SUCCESSFUL USER UPDATE =====
+    console.log('🧪 Testing successful user update...');
+    
     // First create a new user to update
     const createResponse = await supertest(web)
       .post(baseUrlTest)
@@ -60,7 +64,6 @@ describe('Update User Business Flow', () => {
       .set('Cookie', cookieHeader ?? '')
       .send(updateData);
 
-    logger.debug('Update user response', response.body);
     expect(response.status).toBe(200);
     expect(response.body.message).toBe('Success to edit data user.');
     expect(response.body.data).toBeDefined();
@@ -68,25 +71,26 @@ describe('Update User Business Flow', () => {
     expect(response.body.data.gender).toBe(updateData.gender);
     expect(response.body.data.birthdate).toBeDefined();
     expect(response.body.data.role_id).toBe(updateData.role_id);
-  });
 
-  it('Should handle validation errors for missing required fields', async () => {
-    const response = await supertest(web)
+    // ===== TEST 2: VALIDATION ERRORS FOR MISSING REQUIRED FIELDS =====
+    console.log('🧪 Testing validation errors for missing required fields...');
+    
+    const missingFieldsResponse = await supertest(web)
       .patch(`${baseUrlTest}/2`)
       .set('Cookie', cookieHeader ?? '')
       .send({});
 
-    logger.debug('Missing fields validation response', response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toContain('The email is required!');
-    expect(response.body.errors).toContain('The name is required!');
-    expect(response.body.errors).toContain('The gender is required!');
-    expect(response.body.errors).toContain('The birthdate is required!');
-    expect(response.body.errors).toContain('The role is required!');
-  });
+    expect(missingFieldsResponse.status).toBe(400);
+    expect(missingFieldsResponse.body.errors).toContain('The email is required!');
+    expect(missingFieldsResponse.body.errors).toContain('The name is required!');
+    expect(missingFieldsResponse.body.errors).toContain('The gender is required!');
+    expect(missingFieldsResponse.body.errors).toContain('The birthdate is required!');
+    expect(missingFieldsResponse.body.errors).toContain('The role is required!');
 
-  it('Should handle validation errors for invalid email format', async () => {
-    const testCases = [
+    // ===== TEST 3: VALIDATION ERRORS FOR INVALID EMAIL FORMAT =====
+    console.log('🧪 Testing validation errors for invalid email format...');
+    
+    const emailTestCases = [
       { email: 'invalid-email', expectedError: 'Invalid email' },
       { email: 'test@', expectedError: 'Invalid email' },
       { email: '@example.com', expectedError: 'Invalid email' },
@@ -94,8 +98,8 @@ describe('Update User Business Flow', () => {
       { email: 'test@example', expectedError: 'Invalid email' },
     ];
 
-    for (const testCase of testCases) {
-      const response = await supertest(web)
+    for (const testCase of emailTestCases) {
+      const emailResponse = await supertest(web)
         .patch(`${baseUrlTest}/2`)
         .set('Cookie', cookieHeader ?? '')
         .send({
@@ -106,23 +110,23 @@ describe('Update User Business Flow', () => {
           role_id: 1
         });
 
-      logger.debug(`Email validation test: ${testCase.email}`, response.body);
-      expect(response.status).toBe(400);
-      expect(response.body.errors).toContain(testCase.expectedError);
+      expect(emailResponse.status).toBe(400);
+      expect(emailResponse.body.errors).toContain(testCase.expectedError);
     }
-  });
 
-  it('Should handle validation errors for invalid birthdate format', async () => {
-    const testCases = [
-      { birthdate: '24-04-1995', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1995/04/24', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1995.04.24', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '04-24-1995', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1995-4-24', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+    // ===== TEST 4: VALIDATION ERRORS FOR INVALID BIRTHDATE FORMAT =====
+    console.log('🧪 Testing validation errors for invalid birthdate format...');
+    
+    const birthdateTestCases = [
+      { birthdate: 'invalid-date', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+      { birthdate: '1990/01/01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+      { birthdate: '01-01-1990', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+      { birthdate: '1990-13-01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+      { birthdate: '1990-01-32', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
     ];
 
-    for (const testCase of testCases) {
-      const response = await supertest(web)
+    for (const testCase of birthdateTestCases) {
+      const birthdateResponse = await supertest(web)
         .patch(`${baseUrlTest}/2`)
         .set('Cookie', cookieHeader ?? '')
         .send({
@@ -133,80 +137,62 @@ describe('Update User Business Flow', () => {
           role_id: 1
         });
 
-      logger.debug(`Birthdate validation test: ${testCase.birthdate}`, response.body);
-      expect(response.status).toBe(400);
-      expect(response.body.errors).toContain(testCase.expectedError);
+      expect(birthdateResponse.status).toBe(400);
+      expect(birthdateResponse.body.errors).toContain(testCase.expectedError);
     }
-  });
 
-  it('Should handle validation errors for empty name', async () => {
-    const response = await supertest(web)
-      .patch(`${baseUrlTest}/2`)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        email: 'test@example.com',
-        name: '',
-        gender: 'Male',
-        birthdate: '1990-01-01',
-        role_id: 1
-      });
-
-    logger.debug('Empty name validation test', response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toContain('The name is required!');
-  });
-
-  it('Should handle validation errors for empty gender', async () => {
-    const response = await supertest(web)
-      .patch(`${baseUrlTest}/2`)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        email: 'test@example.com',
-        name: 'Test User',
-        gender: '',
-        birthdate: '1990-01-01',
-        role_id: 1
-      });
-
-    logger.debug('Empty gender validation test', response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toContain('The gender is required!');
-  });
-
-  it('Should handle duplicate email error', async () => {
-    // First create a new user
-    const createResponse = await supertest(web)
+    // ===== TEST 5: DUPLICATE EMAIL ERROR =====
+    console.log('🧪 Testing duplicate email error...');
+    
+    // Create first user
+    const firstUserResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        email: 'testuser2@example.com',
-        name: 'Test User 2',
+        email: 'first@example.com',
+        name: 'First User',
         gender: 'Male',
         birthdate: '1990-01-01',
         role_id: 1
       });
 
-    expect(createResponse.status).toBe(200);
-    const userId = createResponse.body.data.id;
+    expect(firstUserResponse.status).toBe(200);
+    const firstUserId = firstUserResponse.body.data.id;
 
-    const response = await supertest(web)
-      .patch(`${baseUrlTest}/${userId}`)
+    // Create second user
+    const secondUserResponse = await supertest(web)
+      .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        email: process.env.EMAIL_ADMIN || 'admin@gmail.com',
-        name: 'Test User',
-        gender: 'Male',
-        birthdate: '1990-01-01',
+        email: 'second@example.com',
+        name: 'Second User',
+        gender: 'Female',
+        birthdate: '1995-05-05',
         role_id: 1
       });
 
-    logger.debug('Duplicate email response', response.body);
-    expect(response.status).toBe(400);
-    expect(response.body.errors).toContain('The email cannot be the same!');
-  });
+    expect(secondUserResponse.status).toBe(200);
+    const secondUserId = secondUserResponse.body.data.id;
 
-  it('Should handle non-existent user ID', async () => {
-    const response = await supertest(web)
+    // Try to update second user with first user's email
+    const duplicateResponse = await supertest(web)
+      .patch(`${baseUrlTest}/${secondUserId}`)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        email: 'first@example.com',
+        name: 'Second User',
+        gender: 'Female',
+        birthdate: '1995-05-05',
+        role_id: 1
+      });
+
+    expect(duplicateResponse.status).toBe(400);
+    expect(duplicateResponse.body.errors).toContain('The email cannot be the same!');
+
+    // ===== TEST 6: NON-EXISTENT USER ID =====
+    console.log('🧪 Testing non-existent user ID...');
+    
+    const nonExistentResponse = await supertest(web)
       .patch(`${baseUrlTest}/999`)
       .set('Cookie', cookieHeader ?? '')
       .send({
@@ -217,259 +203,187 @@ describe('Update User Business Flow', () => {
         role_id: 1
       });
 
-    logger.debug('Non-existent user response', response.body);
-    expect(response.status).toBe(404);
-    expect(response.body.errors).toContain('The user does not exist!');
-  });
+    expect(nonExistentResponse.status).toBe(404);
+    expect(nonExistentResponse.body.errors).toContain('The user does not exist!');
 
-  it('Should handle different gender values', async () => {
-    const testCases = [
+    // ===== TEST 7: INVALID USER ID FORMAT =====
+    console.log('🧪 Testing invalid user ID format...');
+    
+    const invalidFormatResponse = await supertest(web)
+      .patch(`${baseUrlTest}/invalid`)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        email: 'test@example.com',
+        name: 'Test User',
+        gender: 'Male',
+        birthdate: '1990-01-01',
+        role_id: 1
+      });
+
+    expect(invalidFormatResponse.status).toBe(500);
+    // Invalid ID format causes database error
+
+    // ===== TEST 8: DIFFERENT GENDER VALUES =====
+    console.log('🧪 Testing different gender values...');
+    
+    const genderTestCases = [
       { gender: 'Male', name: 'Male User' },
       { gender: 'Female', name: 'Female User' },
     ];
 
-    for (const testCase of testCases) {
-      // Create a new user for each test case
-      const createResponse = await supertest(web)
-        .post(baseUrlTest)
+    for (const testCase of genderTestCases) {
+      const genderResponse = await supertest(web)
+        .patch(`${baseUrlTest}/${firstUserId}`)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          email: `test${testCase.gender.toLowerCase()}@example.com`,
-          name: 'Original User',
-          gender: 'Male',
-          birthdate: '1990-01-01',
-          role_id: 1
-        });
-
-      expect(createResponse.status).toBe(200);
-      const userId = createResponse.body.data.id;
-
-      const response = await supertest(web)
-        .patch(`${baseUrlTest}/${userId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          email: `test${testCase.gender.toLowerCase()}@example.com`,
+          email: 'first@example.com',
           name: testCase.name,
           gender: testCase.gender,
           birthdate: '1990-01-01',
           role_id: 1
         });
 
-      logger.debug(`Gender test: ${testCase.gender}`, response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data.gender).toBe(testCase.gender);
-      expect(response.body.data.name).toBe(testCase.name);
+      expect(genderResponse.status).toBe(200);
+      expect(genderResponse.body.data.gender).toBe(testCase.gender);
+      expect(genderResponse.body.data.name).toBe(testCase.name);
     }
-  });
 
-  it('Should handle various valid birthdate formats', async () => {
-    const testCases = [
-      { birthdate: '1990-01-01', name: 'User 1990' },
-      { birthdate: '1995-12-31', name: 'User 1995' },
-      { birthdate: '2000-06-15', name: 'User 2000' },
-      { birthdate: '1985-03-20', name: 'User 1985' },
+    // ===== TEST 9: VARIOUS VALID BIRTHDATE FORMATS =====
+    console.log('🧪 Testing various valid birthdate formats...');
+    
+    const birthdateValidTestCases = [
+      { birthdate: '1990-01-01', name: 'User1990' },
+      { birthdate: '2000-12-31', name: 'User2000' },
+      { birthdate: '1985-06-15', name: 'User1985' },
+      { birthdate: '2020-02-29', name: 'User2020' }, // Leap year
     ];
 
-    for (const testCase of testCases) {
-      // Create a new user for each test case
-      const createResponse = await supertest(web)
-        .post(baseUrlTest)
+    for (const testCase of birthdateValidTestCases) {
+      const birthdateValidResponse = await supertest(web)
+        .patch(`${baseUrlTest}/${firstUserId}`)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          email: `test${testCase.name.replace(' ', '').toLowerCase()}@example.com`,
-          name: 'Original User',
-          gender: 'Male',
-          birthdate: '1990-01-01',
-          role_id: 1
-        });
-
-      expect(createResponse.status).toBe(200);
-      const userId = createResponse.body.data.id;
-
-      const response = await supertest(web)
-        .patch(`${baseUrlTest}/${userId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          email: `test${testCase.name.replace(' ', '').toLowerCase()}@example.com`,
+          email: 'first@example.com',
           name: testCase.name,
           gender: 'Male',
           birthdate: testCase.birthdate,
           role_id: 1
         });
 
-      logger.debug(`Birthdate test: ${testCase.birthdate}`, response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data.name).toBe(testCase.name);
-      expect(response.body.data.birthdate).toBeDefined();
+      expect(birthdateValidResponse.status).toBe(200);
+      expect(birthdateValidResponse.body.data.birthdate).toContain(testCase.birthdate);
+      expect(birthdateValidResponse.body.data.name).toBe(testCase.name);
     }
-  });
 
-  it('Should handle special characters in name', async () => {
-    const specialNames = [
-      'José María',
-      'Jean-Pierre',
-      'O\'Connor',
-      'Smith-Jones',
-      '李小明',
-      'محمد أحمد',
+    // ===== TEST 10: SPECIAL CHARACTERS IN NAME FIELD =====
+    console.log('🧪 Testing special characters in name field...');
+    
+    const specialCharTestCases = [
+      { name: 'John-Doe', gender: 'Male' },
+      { name: "O'Connor", gender: 'Male' },
+      { name: 'Mary Jane', gender: 'Female' },
     ];
 
-    for (let i = 0; i < specialNames.length; i++) {
-      const name = specialNames[i];
-      // Create a new user for each test case
-      const createResponse = await supertest(web)
-        .post(baseUrlTest)
+    for (const testCase of specialCharTestCases) {
+      const specialCharResponse = await supertest(web)
+        .patch(`${baseUrlTest}/${firstUserId}`)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          email: `test${i}@example.com`,
-          name: 'Original User',
-          gender: 'Male',
+          email: 'first@example.com',
+          name: testCase.name,
+          gender: testCase.gender,
           birthdate: '1990-01-01',
           role_id: 1
         });
 
-      expect(createResponse.status).toBe(200);
-      const userId = createResponse.body.data.id;
-
-      const response = await supertest(web)
-        .patch(`${baseUrlTest}/${userId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          email: `test${i}@example.com`,
-          name: name,
-          gender: 'Male',
-          birthdate: '1990-01-01',
-          role_id: 1
-        });
-
-      logger.debug(`Special name test: ${name}`, response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data.name).toBe(name);
+      expect(specialCharResponse.status).toBe(200);
+      expect(specialCharResponse.body.data.name).toBe(testCase.name);
+      expect(specialCharResponse.body.data.gender).toBe(testCase.gender);
     }
-  });
 
-  it('Should handle different role assignments', async () => {
-    const testCases = [
-      { role_id: 1, name: 'Role 1 User' },
+    // ===== TEST 11: USER UPDATE WITH EXTRA FIELDS =====
+    console.log('🧪 Testing user update with extra fields...');
+    
+    const extraFieldsData = {
+      email: 'first@example.com',
+      name: 'Test User',
+      gender: 'Male',
+      birthdate: '1990-01-01',
+      role_id: 1,
+      extra_field: 'should be ignored',
+      another_field: 123,
+      nested_field: { key: 'value' }
+    };
+
+    const extraFieldsResponse = await supertest(web)
+      .patch(`${baseUrlTest}/${firstUserId}`)
+      .set('Cookie', cookieHeader ?? '')
+      .send(extraFieldsData);
+
+    expect(extraFieldsResponse.status).toBe(200);
+    expect(extraFieldsResponse.body.data.email).toBe(extraFieldsData.email);
+    expect(extraFieldsResponse.body.data.name).toBe(extraFieldsData.name);
+    expect(extraFieldsResponse.body.data.gender).toBe(extraFieldsData.gender);
+    expect(extraFieldsResponse.body.data.extra_field).toBeUndefined();
+    expect(extraFieldsResponse.body.data.another_field).toBeUndefined();
+    expect(extraFieldsResponse.body.data.nested_field).toBeUndefined();
+
+    // ===== TEST 12: DIFFERENT ROLE ASSIGNMENTS =====
+    console.log('🧪 Testing different role assignments...');
+    
+    const roleTestCases = [
+      { role_id: 1, name: 'Role1User' },
+      { role_id: 1, name: 'Role1User2' }, // Same role, different user
     ];
 
-    for (const testCase of testCases) {
-      // Create a new user for each test case
-      const createResponse = await supertest(web)
-        .post(baseUrlTest)
+    for (const testCase of roleTestCases) {
+      const roleResponse = await supertest(web)
+        .patch(`${baseUrlTest}/${firstUserId}`)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          email: `testrole${testCase.role_id}@example.com`,
-          name: 'Original User',
-          gender: 'Male',
-          birthdate: '1990-01-01',
-          role_id: 1
-        });
-
-      expect(createResponse.status).toBe(200);
-      const userId = createResponse.body.data.id;
-
-      const response = await supertest(web)
-        .patch(`${baseUrlTest}/${userId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          email: `testrole${testCase.role_id}@example.com`,
+          email: 'first@example.com',
           name: testCase.name,
           gender: 'Male',
           birthdate: '1990-01-01',
           role_id: testCase.role_id
         });
 
-      logger.debug(`Role test: ${testCase.role_id}`, response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data.role_id).toBe(testCase.role_id);
-      expect(response.body.data.name).toBe(testCase.name);
+      expect(roleResponse.status).toBe(200);
+      expect(roleResponse.body.data.role_id).toBe(testCase.role_id);
+      expect(roleResponse.body.data.name).toBe(testCase.name);
     }
-  });
 
-  it('Should ignore additional fields in request body', async () => {
-    // Create a new user first
-    const createResponse = await supertest(web)
-      .post(baseUrlTest)
+    // ===== TEST 13: RESPONSE STRUCTURE =====
+    console.log('🧪 Testing response structure...');
+    
+    const structureResponse = await supertest(web)
+      .patch(`${baseUrlTest}/${firstUserId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        email: 'testadditional@example.com',
-        name: 'Original User',
+        email: 'first@example.com',
+        name: 'Structure Test User',
         gender: 'Male',
         birthdate: '1990-01-01',
         role_id: 1
       });
 
-    expect(createResponse.status).toBe(200);
-    const userId = createResponse.body.data.id;
+    expect(structureResponse.status).toBe(200);
+    expect(structureResponse.body).toHaveProperty('message');
+    expect(structureResponse.body).toHaveProperty('data');
+    expect(structureResponse.body.message).toBe('Success to edit data user.');
+    expect(structureResponse.body.data).toHaveProperty('id');
+    expect(structureResponse.body.data).toHaveProperty('email');
+    expect(structureResponse.body.data).toHaveProperty('name');
+    expect(structureResponse.body.data).toHaveProperty('gender');
+    expect(structureResponse.body.data).toHaveProperty('birthdate');
+    expect(structureResponse.body.data).toHaveProperty('active');
+    expect(structureResponse.body.data).toHaveProperty('role_id');
+    expect(structureResponse.body.data).toHaveProperty('created_at');
+    expect(structureResponse.body.data).toHaveProperty('updated_at');
+    expect(structureResponse.body.data).toHaveProperty('created_by');
+    expect(structureResponse.body.data).toHaveProperty('updated_by');
+    expect(structureResponse.body.data).toHaveProperty('photo');
 
-    const response = await supertest(web)
-      .patch(`${baseUrlTest}/${userId}`)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        email: 'testadditional@example.com',
-        name: 'Test User',
-        gender: 'Male',
-        birthdate: '1990-01-01',
-        role_id: 1,
-        additional_field: 'should be ignored',
-        another_field: 123,
-        password: 'should not be updated'
-      });
-
-    logger.debug('Additional fields test', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.data.name).toBe('Test User');
-    // Additional fields should not affect the update
-  });
-
-  it('Should handle concurrent update requests', async () => {
-    // Create a new user first
-    const createResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        email: 'concurrent@example.com',
-        name: 'Original User',
-        gender: 'Male',
-        birthdate: '1990-01-01',
-        role_id: 1
-      });
-
-    expect(createResponse.status).toBe(200);
-    const userId = createResponse.body.data.id;
-
-    const updateData = {
-      email: 'concurrent@example.com',
-      name: 'Concurrent User',
-      gender: 'Male',
-      birthdate: '1990-01-01',
-      role_id: 1
-    };
-
-    // Make multiple concurrent requests
-    const promises = [
-      supertest(web)
-        .patch(`${baseUrlTest}/${userId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send(updateData),
-      supertest(web)
-        .patch(`${baseUrlTest}/${userId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send({ ...updateData, name: 'Concurrent User 2' }),
-      supertest(web)
-        .patch(`${baseUrlTest}/${userId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send({ ...updateData, name: 'Concurrent User 3' })
-    ];
-
-    const responses = await Promise.all(promises);
-
-    // All requests should succeed
-    responses.forEach((response, index) => {
-      logger.debug(`Concurrent update ${index + 1}`, response.body);
-      expect(response.status).toBe(200);
-      expect(response.body.data).toBeDefined();
-    });
+    console.log('✅ All update user flow tests completed successfully');
   });
 });

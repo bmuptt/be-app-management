@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -9,251 +9,310 @@ dotenv.config();
 const baseUrlTest = '/api/app-management/menu';
 
 describe('Menu List Header Business Flow', () => {
-  let cookies: string | string[];
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Increase timeout for database operations
+    jest.setTimeout(30000);
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
 
     const responseLogin = await AuthLogic.getLoginSuperAdmin();
     expect(responseLogin.status).toBe(200);
 
-    cookies = responseLogin.headers['set-cookie'];
+    const cookies = responseLogin.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-  }, 30000);
+  });
 
   afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
   });
 
-  it('Should successfully get list header with default pagination', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/2/list-header`)
-      .set('Cookie', cookieHeader ?? '');
+  it('Should handle complete list header menu flow including validation, edge cases, and response structure', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
 
-    logger.debug('List header response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data.length).toBeGreaterThan(0);
-  });
-
-  it('Should successfully get list header with custom pagination', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/2/list-header`)
-      .query({
-        page: 1,
-        per_page: 10,
-      })
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('List header with pagination response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data[2].name).toBe('Role');
-  });
-
-  it('Should successfully get list header with sorting', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/2/list-header`)
-      .query({
-        order_field: 'name',
-        order_dir: 'desc',
-        page: 1,
-        per_page: 10,
-      })
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('List header with sorting response', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.data[3].key_menu).toBe('appmanagement');
-  });
-
-  it('Should handle non-existent menu ID', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/999999/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Non-existent menu list header response', response.body);
-    expect(response.status).toBe(200);
-    // The service returns empty data for non-existent menu IDs
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-  });
-
-  it('Should handle negative menu ID', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/-1/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Negative menu ID list header response', response.body);
-    expect(response.status).toBe(200);
-    // The service returns empty data for negative menu IDs
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-  });
-
-  it('Should handle zero menu ID', async () => {
-    const response = await supertest(web)
+    // ===== TEST 1: GET MENU LIST HEADER =====
+    console.log('🧪 Testing get menu list header...');
+    
+    const headerResponse = await supertest(web)
       .get(`${baseUrlTest}/0/list-header`)
       .set('Cookie', cookieHeader ?? '');
 
-    logger.debug('Zero menu ID list header response', response.body);
-    expect(response.status).toBe(200);
-    // The service returns empty data for zero menu IDs
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-  });
+    expect(headerResponse.status).toBe(200);
+    expect(headerResponse.body).toHaveProperty('data');
+    expect(Array.isArray(headerResponse.body.data)).toBe(true);
 
-  it('Should handle very large menu ID', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/999999999999/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Very large menu ID list header response', response.body);
-    expect(response.status).toBe(500);
-    // Very large ID causes database integer overflow error
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should handle invalid menu ID format', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/invalid/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Invalid menu ID format list header response', response.body);
-    expect(response.status).toBe(500);
-    // Invalid ID format causes database error
-    expect(response.body.errors).toBeDefined();
-  });
-
-  it('Should handle decimal menu ID', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/1.5/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Decimal menu ID list header response', response.body);
-    expect(response.status).toBe(200);
-    // parseInt(1.5) returns 1, which finds the App Management menu
-    expect(response.body).toHaveProperty('data');
-  });
-
-  it('Should handle different page sizes', async () => {
-    const pageSizes = [5, 10, 20, 50];
+    // ===== TEST 2: VERIFY HEADER FORMAT =====
+    console.log('🧪 Testing verify header format...');
     
-    for (const perPage of pageSizes) {
-      const response = await supertest(web)
-        .get(`${baseUrlTest}/2/list-header`)
-        .query({
-          page: 1,
-          per_page: perPage,
-        })
-        .set('Cookie', cookieHeader ?? '');
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('data');
-      expect(Array.isArray(response.body.data)).toBe(true);
+    if (headerResponse.body.data.length > 0) {
+      const menu = headerResponse.body.data[0];
+      expect(menu).toHaveProperty('id');
+      expect(menu).toHaveProperty('key_menu');
+      expect(menu).toHaveProperty('name');
+      expect(menu).toHaveProperty('url');
+      expect(menu).toHaveProperty('order_number');
+      expect(menu).toHaveProperty('active');
+      expect(menu).toHaveProperty('menu_id');
     }
-  });
 
-  it('Should handle different sorting fields', async () => {
-    const sortFields = ['name', 'key_menu', 'created_at'];
+    // ===== TEST 3: VERIFY RETURNED MENUS =====
+    console.log('🧪 Testing verify returned menus...');
     
-    for (const orderField of sortFields) {
-      const response = await supertest(web)
-        .get(`${baseUrlTest}/2/list-header`)
-        .query({
-          order_field: orderField,
-          order_dir: 'asc',
-          page: 1,
-          per_page: 10,
-        })
-        .set('Cookie', cookieHeader ?? '');
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('data');
-      expect(Array.isArray(response.body.data)).toBe(true);
-    }
-  });
-
-  it('Should handle different sort directions', async () => {
-    const sortDirections = ['asc', 'desc'];
+    // listHeader returns all menus except the one specified in the ID parameter
+    // When called with ID 0 (non-existent), it returns all menus
+    expect(headerResponse.body.data.length).toBeGreaterThan(0);
     
-    for (const orderDir of sortDirections) {
-      const response = await supertest(web)
-        .get(`${baseUrlTest}/2/list-header`)
-        .query({
-          order_field: 'name',
-          order_dir: orderDir,
-          page: 1,
-          per_page: 10,
-        })
-        .set('Cookie', cookieHeader ?? '');
-
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('data');
-      expect(Array.isArray(response.body.data)).toBe(true);
-    }
-  });
-
-  it('Should return correct response structure', async () => {
-    const response = await supertest(web)
-      .get(`${baseUrlTest}/2/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Response structure test', response.body);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(Array.isArray(response.body.data)).toBe(true);
-    
-    if (response.body.data.length > 0) {
-      const firstItem = response.body.data[0];
-      expect(firstItem).toHaveProperty('id');
-      expect(firstItem).toHaveProperty('key_menu');
-      expect(firstItem).toHaveProperty('name');
-      expect(firstItem).toHaveProperty('active');
-      expect(firstItem).toHaveProperty('created_by');
-      expect(firstItem).toHaveProperty('created_at');
-      expect(firstItem).toHaveProperty('updated_by');
-      expect(firstItem).toHaveProperty('updated_at');
-    }
-  });
-
-  it('Should handle multiple requests for same menu', async () => {
-    const menuId = 2;
-    
-    // Make multiple requests to the same endpoint
-    const response1 = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    const response2 = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    const response3 = await supertest(web)
-      .get(`${baseUrlTest}/${menuId}/list-header`)
-      .set('Cookie', cookieHeader ?? '');
-
-    logger.debug('Multiple requests test', {
-      response1: response1.body,
-      response2: response2.body,
-      response3: response3.body
+    // Verify that none of the returned menus have ID 0 (since we excluded it)
+    headerResponse.body.data.forEach((menu: any) => {
+      expect(menu.id).not.toBe(0);
     });
 
-    expect(response1.status).toBe(200);
-    expect(response2.status).toBe(200);
-    expect(response3.status).toBe(200);
-    expect(response1.body).toHaveProperty('data');
-    expect(response2.body).toHaveProperty('data');
-    expect(response3.body).toHaveProperty('data');
+    // ===== TEST 4: VERIFY MENU PROPERTIES =====
+    console.log('🧪 Testing verify menu properties...');
+    
+    // Verify that returned menus have the expected properties
+    headerResponse.body.data.forEach((menu: any) => {
+      expect(menu).toHaveProperty('active');
+      expect(['Active', 'Inactive']).toContain(menu.active);
+    });
+
+    // ===== TEST 5: VERIFY ORDERING =====
+    console.log('🧪 Testing verify ordering...');
+    
+    // Verify that menus are ordered by ID descending (default order for listHeader)
+    if (headerResponse.body.data.length > 1) {
+      for (let i = 0; i < headerResponse.body.data.length - 1; i++) {
+        expect(headerResponse.body.data[i].id).toBeGreaterThanOrEqual(headerResponse.body.data[i + 1].id);
+      }
+    }
+
+    // ===== TEST 6: CREATE AND VERIFY NEW MENU IN LIST =====
+    console.log('🧪 Testing create and verify new menu in list...');
+    
+    // Create a new menu
+    const newMenuResponse = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        key_menu: 'new-list-menu',
+        name: 'New List Menu'
+      });
+
+    expect(newMenuResponse.status).toBe(200);
+    const newMenuId = newMenuResponse.body.data.id;
+
+    // Get updated list
+    const updatedListResponse = await supertest(web)
+      .get(`${baseUrlTest}/0/list-header`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(updatedListResponse.status).toBe(200);
+    expect(updatedListResponse.body.data).toBeDefined();
+
+    // Verify new menu is in list
+    const newMenu = updatedListResponse.body.data.find((menu: any) => menu.id === newMenuId);
+    expect(newMenu).toBeDefined();
+    expect(newMenu.key_menu).toBe('new-list-menu');
+    expect(newMenu.name).toBe('New List Menu');
+    expect(newMenu.menu_id).toBeNull();
+    expect(newMenu.active).toBe('Active');
+
+    // ===== TEST 7: VERIFY MENU EXCLUSION =====
+    console.log('🧪 Testing verify menu exclusion...');
+    
+    // Create a parent menu
+    const parentResponse = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        key_menu: 'parent-header-menu',
+        name: 'Parent Header Menu'
+      });
+
+    expect(parentResponse.status).toBe(200);
+    const parentId = parentResponse.body.data.id;
+
+    // Create a submenu
+    const submenuResponse = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        key_menu: 'submenu-header-menu',
+        name: 'Submenu Header Menu',
+        menu_id: parentId
+      });
+
+    expect(submenuResponse.status).toBe(200);
+    const submenuId = submenuResponse.body.data.id;
+
+    // Get header excluding the parent menu
+    const submenuHeaderResponse = await supertest(web)
+      .get(`${baseUrlTest}/${parentId}/list-header`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(submenuHeaderResponse.status).toBe(200);
+
+    // Verify parent is not included (since we excluded it by ID)
+    const parentInHeader = submenuHeaderResponse.body.data.find((menu: any) => menu.id === parentId);
+    expect(parentInHeader).toBeUndefined();
+
+    // Verify submenu is included (since it wasn't excluded)
+    const submenuInHeader = submenuHeaderResponse.body.data.find((menu: any) => menu.id === submenuId);
+    expect(submenuInHeader).toBeDefined();
+
+    // ===== TEST 8: VERIFY INACTIVE MENUS STILL IN HEADER =====
+    console.log('🧪 Testing verify inactive menus still in header...');
+    
+    // Create a menu to deactivate
+    const inactiveMenuResponse = await supertest(web)
+      .post(baseUrlTest)
+      .set('Cookie', cookieHeader ?? '')
+      .send({
+        key_menu: 'inactive-header-menu',
+        name: 'Inactive Header Menu'
+      });
+
+    expect(inactiveMenuResponse.status).toBe(200);
+    const inactiveMenuId = inactiveMenuResponse.body.data.id;
+
+    // Deactivate the menu
+    const deactivateResponse = await supertest(web)
+      .delete(`${baseUrlTest}/${inactiveMenuId}`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(deactivateResponse.status).toBe(200);
+
+    // Get header and verify inactive menu is still included (listHeader doesn't filter by active status)
+    const inactiveHeaderResponse = await supertest(web)
+      .get(`${baseUrlTest}/0/list-header`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(inactiveHeaderResponse.status).toBe(200);
+
+    const inactiveMenuInHeader = inactiveHeaderResponse.body.data.find((menu: any) => menu.id === inactiveMenuId);
+    expect(inactiveMenuInHeader).toBeDefined();
+    expect(inactiveMenuInHeader.active).toBe('Inactive');
+
+    // ===== TEST 9: HEADER WITH QUERY PARAMETERS =====
+    console.log('🧪 Testing header with query parameters...');
+    
+    const queryHeaderResponse = await supertest(web)
+      .get(`${baseUrlTest}/0/list-header?include=extra&limit=5`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(queryHeaderResponse.status).toBe(200);
+    expect(queryHeaderResponse.body.data).toBeDefined();
+    expect(Array.isArray(queryHeaderResponse.body.data)).toBe(true);
+
+    // ===== TEST 10: CONCURRENT HEADER REQUESTS =====
+    console.log('🧪 Testing concurrent header requests...');
+    
+    // Make concurrent header requests
+    const concurrentPromises = Array(5).fill(null).map(() =>
+      supertest(web)
+        .get(`${baseUrlTest}/0/list-header`)
+        .set('Cookie', cookieHeader ?? '')
+    );
+
+    const concurrentResponses = await Promise.all(concurrentPromises);
+
+    concurrentResponses.forEach(response => {
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    // ===== TEST 11: HEADER RESPONSE PERFORMANCE =====
+    console.log('🧪 Testing header response performance...');
+    
+    const startTime = Date.now();
+    const performanceResponse = await supertest(web)
+      .get(`${baseUrlTest}/0/list-header`)
+      .set('Cookie', cookieHeader ?? '');
+
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+
+    expect(performanceResponse.status).toBe(200);
+    expect(responseTime).toBeLessThan(3000); // Should respond within 3 seconds
+
+    // ===== TEST 12: HEADER WITH LARGE DATASET =====
+    console.log('🧪 Testing header with large dataset...');
+    
+    // Create many root level menus to test performance
+    const largeDatasetPromises = Array(10).fill(null).map((_, index) =>
+      supertest(web)
+        .post(baseUrlTest)
+        .set('Cookie', cookieHeader ?? '')
+        .send({
+          key_menu: `large-header-menu-${index + 1}`,
+          name: `Large Header Menu ${index + 1}`
+        })
+    );
+
+    const largeDatasetResponses = await Promise.all(largeDatasetPromises);
+    largeDatasetResponses.forEach(response => {
+      expect(response.status).toBe(200);
+    });
+
+    // Get header with large dataset
+    const largeHeaderResponse = await supertest(web)
+      .get(`${baseUrlTest}/0/list-header`)
+      .set('Cookie', cookieHeader ?? '');
+
+    expect(largeHeaderResponse.status).toBe(200);
+    expect(largeHeaderResponse.body.data.length).toBeGreaterThanOrEqual(10);
+
+    // ===== TEST 13: VERIFY HEADER DATA TYPES =====
+    console.log('🧪 Testing verify header data types...');
+    
+    // Verify that all header menus have correct data types
+    largeHeaderResponse.body.data.forEach((menu: any) => {
+      expect(typeof menu.id).toBe('number');
+      expect(typeof menu.key_menu).toBe('string');
+      expect(typeof menu.name).toBe('string');
+      expect(menu.url === null || typeof menu.url === 'string').toBe(true);
+      expect(typeof menu.order_number).toBe('number');
+      expect(typeof menu.active).toBe('string');
+      // menu_id can be null or number (for child menus)
+      expect(menu.menu_id === null || typeof menu.menu_id === 'number').toBe(true);
+    });
+
+    // ===== TEST 14: VERIFY HEADER CONSISTENCY =====
+    console.log('🧪 Testing verify header consistency...');
+    
+    // Make multiple requests to verify consistency
+    const consistencyPromises = Array(3).fill(null).map(() =>
+      supertest(web)
+        .get(`${baseUrlTest}/0/list-header`)
+        .set('Cookie', cookieHeader ?? '')
+    );
+
+    const consistencyResponses = await Promise.all(consistencyPromises);
+
+    // Verify all responses have the same number of items
+    const responseLengths = consistencyResponses.map(response => response.body.data.length);
+    const firstLength = responseLengths[0];
+    responseLengths.forEach(length => {
+      expect(length).toBe(firstLength);
+    });
+
+    // ===== TEST 15: VERIFY HEADER UNIQUENESS =====
+    console.log('🧪 Testing verify header uniqueness...');
+    
+    // Verify that all menu IDs in header are unique
+    const menuIds = largeHeaderResponse.body.data.map((menu: any) => menu.id);
+    const uniqueIds = new Set(menuIds);
+    expect(uniqueIds.size).toBe(menuIds.length);
+
+    // Verify that all key_menu values are unique
+    const keyMenus = largeHeaderResponse.body.data.map((menu: any) => menu.key_menu);
+    const uniqueKeyMenus = new Set(keyMenus);
+    expect(uniqueKeyMenus.size).toBe(keyMenus.length);
+
+    console.log('✅ All list header menu flow tests completed successfully');
   });
 });

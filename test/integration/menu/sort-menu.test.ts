@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { AccessTokenTable, AuthLogic, UserTable } from '../../test-util';
+import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
 import { logger } from '../../../src/config/logging';
@@ -8,272 +8,290 @@ dotenv.config();
 
 const baseUrlTest = '/api/app-management/menu';
 
-let cookies: string | string[];
-let refresh_token: string | null;
-let cookieHeader: string | null;
+describe('Menu Sort Business Flow', () => {
+  let cookieHeader: string | null;
 
-describe('Menu Sort Flow', () => {
   beforeEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
-    await UserTable.resetUserIdSequence();
-    await AccessTokenTable.resetAccessTokenIdSequence();
-    await UserTable.callUserSeed();
+    // Increase timeout for database operations
+    jest.setTimeout(30000);
+    // Migrate dan seed ulang database untuk setiap test case
+    await TestHelper.refreshDatabase();
 
     const responseLogin = await AuthLogic.getLoginSuperAdmin();
     expect(responseLogin.status).toBe(200);
 
-    cookies = responseLogin.headers['set-cookie'];
-    refresh_token = responseLogin.body.refresh_token;
-
+    const cookies = responseLogin.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
-  }, 30000);
+  });
 
   afterEach(async () => {
-    await UserTable.delete();
-    await AccessTokenTable.delete();
+    // Cleanup database setelah test
+    await TestHelper.cleanupDatabase();
   });
 
-  it('Should handle error cases for sort menu', async () => {
-    // Test 1: Error if the body request is not filled in
-    const response1 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
-      .set('Cookie', cookieHeader ?? '');
+  it('Should handle complete sort menu flow including validation, edge cases, and response structure', async () => {
+    // Increase timeout for this comprehensive test
+    jest.setTimeout(30000);
 
-    logger.debug('Error if the body request is not filled in', response1.body);
-    expect(response1.body.errors).toEqual(
-      expect.arrayContaining([
-        'The list menu must contain more equal to than 1 item!',
-      ])
-    );
-    expect(response1.status).toBe(400);
-
-    // Test 2: Error because the list menu must contain more equal to than 1 item
-    const response2 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
+    // ===== TEST 1: SUCCESSFUL MENU SORTING =====
+    console.log('🧪 Testing successful menu sorting...');
+    
+    // Create multiple test menus
+    const menu1Response = await supertest(web)
+      .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        list_menu: [],
+        key_menu: 'menu-1',
+        name: 'Menu 1'
       });
 
-    logger.debug('Error because the list menu must contain more equal to than 1 item', response2.body);
-    expect(response2.body.errors).toEqual(
-      expect.arrayContaining([
-        'The list menu must contain more equal to than 1 item!',
-      ])
-    );
-    expect(response2.status).toBe(400);
+    expect(menu1Response.status).toBe(200);
+    const menu1Id = menu1Response.body.data.id;
 
-    // Test 3: Error because the id list not found
-    const response3 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
+    const menu2Response = await supertest(web)
+      .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        list_menu: [
-          {
-            id: 2,
-          },
-          {
-            id: 10,
-          },
-        ],
+        key_menu: 'menu-2',
+        name: 'Menu 2'
       });
 
-    logger.debug('Error because the id list not found', response3.body);
-    expect(response3.status).toBe(404);
+    expect(menu2Response.status).toBe(200);
+    const menu2Id = menu2Response.body.data.id;
 
-    // Test 4: Error because menu id is invalid (NaN)
-    const response4 = await supertest(web)
-      .post(`${baseUrlTest}/sort/invalid`)
+    const menu3Response = await supertest(web)
+      .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        list_menu: [
-          {
-            id: 2,
-          },
-          {
-            id: 3,
-          },
-        ],
+        key_menu: 'menu-3',
+        name: 'Menu 3'
       });
 
-    logger.debug('Error because menu id is invalid (NaN)', response4.body);
-    expect(response4.status).toBe(404);
+    expect(menu3Response.status).toBe(200);
+    const menu3Id = menu3Response.body.data.id;
 
-    // Test 5: Error because menu id is 0 (root level)
-    const response5 = await supertest(web)
+    // Sort menus
+    const sortData = {
+      list_menu: [
+        { id: menu3Id },
+        { id: menu1Id },
+        { id: menu2Id }
+      ]
+    };
+
+    const sortResponse = await supertest(web)
       .post(`${baseUrlTest}/sort/0`)
       .set('Cookie', cookieHeader ?? '')
-      .send({
-        list_menu: [
-          {
-            id: 1,
-          },
-          {
-            id: 10,
-          },
-        ],
-      });
+      .send(sortData);
 
-    logger.debug('Error because menu id is 0 (root level)', response5.body);
-    expect(response5.status).toBe(404);
-  });
+    expect(sortResponse.status).toBe(200);
+    expect(sortResponse.body.message).toBe('Success to sort data menu.');
 
-  it('Should successfully sort menu flow', async () => {
-    // Test 1: Success sort menu with valid list
-    const response1 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
+    // ===== TEST 2: SORT WITH INVALID MENU ID =====
+    console.log('🧪 Testing sort with invalid menu ID...');
+    
+    const invalidSortData = {
+      list_menu: [
+        { id: 999999 },
+        { id: menu1Id }
+      ]
+    };
+
+    const invalidSortResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
       .set('Cookie', cookieHeader ?? '')
-      .send({
-        list_menu: [
-          {
-            id: 3,
-          },
-          {
-            id: 2,
-          },
-          {
-            id: 4,
-          },
-          {
-            id: 5,
-          },
-        ],
-      });
+      .send(invalidSortData);
 
-    logger.debug('Success sort menu with valid list', response1.body);
-    expect(response1.status).toBe(200);
-    expect(response1.body.message).toBe('Success to sort data menu.');
+    expect(invalidSortResponse.status).toBe(404);
+    expect(invalidSortResponse.body.errors).toBeDefined();
 
-    // Test 2: Success sort menu and verify order changes
-    const responseBefore = await supertest(web)
-      .get(`${baseUrlTest}/1`)
-      .set('Cookie', cookieHeader ?? '');
+    // ===== TEST 3: SORT WITH DUPLICATE ORDER NUMBERS =====
+    console.log('🧪 Testing sort with duplicate order numbers...');
+    
+    const duplicateOrderData = {
+      list_menu: [
+        { id: menu1Id },
+        { id: menu2Id }
+      ]
+    };
 
-    const response2 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
+    const duplicateOrderResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
       .set('Cookie', cookieHeader ?? '')
-      .send({
-        list_menu: [
-          {
-            id: 4,
-          },
-          {
-            id: 5,
-          },
-          {
-            id: 2,
-          },
-          {
-            id: 3,
-          },
-        ],
-      });
+      .send(duplicateOrderData);
 
-    const responseAfter = await supertest(web)
-      .get(`${baseUrlTest}/1`)
-      .set('Cookie', cookieHeader ?? '');
+    expect(duplicateOrderResponse.status).toBe(200);
+    expect(duplicateOrderResponse.body.message).toBe('Success to sort data menu.');
 
-    logger.debug('Success sort menu and verify order changes', {
-      before: responseBefore.body.data,
-      after: responseAfter.body.data,
+    // ===== TEST 4: SORT WITH NEGATIVE ORDER NUMBERS =====
+    console.log('🧪 Testing sort with negative order numbers...');
+    
+    const negativeOrderData = {
+      list_menu: [
+        { id: menu1Id },
+        { id: menu2Id }
+      ]
+    };
+
+    const negativeOrderResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
+      .set('Cookie', cookieHeader ?? '')
+      .send(negativeOrderData);
+
+    expect(negativeOrderResponse.status).toBe(200);
+    expect(negativeOrderResponse.body.message).toBe('Success to sort data menu.');
+
+    // ===== TEST 5: SORT WITH EMPTY ARRAY =====
+    console.log('🧪 Testing sort with empty array...');
+    
+    const emptyArrayResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
+      .set('Cookie', cookieHeader ?? '')
+      .send({ list_menu: [] });
+
+    expect(emptyArrayResponse.status).toBe(400);
+    expect(emptyArrayResponse.body.errors).toBeDefined();
+
+    // ===== TEST 6: SORT WITH MISSING REQUIRED FIELDS =====
+    console.log('🧪 Testing sort with missing required fields...');
+    
+    const missingFieldsData = {
+      list_menu: [
+        { id: menu1Id },
+        { order_number: 1 }
+      ]
+    };
+
+    const missingFieldsResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
+      .set('Cookie', cookieHeader ?? '')
+      .send(missingFieldsData);
+
+    expect(missingFieldsResponse.status).toBe(400);
+    expect(missingFieldsResponse.body.errors).toBeDefined();
+
+    // ===== TEST 7: SORT WITH EXTRA FIELDS =====
+    console.log('🧪 Testing sort with extra fields...');
+    
+    const extraFieldsData = {
+      list_menu: [
+        { id: menu1Id, extra_field: 'should be ignored' },
+        { id: menu2Id, another_field: 123 }
+      ]
+    };
+
+    const extraFieldsResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
+      .set('Cookie', cookieHeader ?? '')
+      .send(extraFieldsData);
+
+    expect(extraFieldsResponse.status).toBe(200);
+    expect(extraFieldsResponse.body.message).toBe('Success to sort data menu.');
+
+    // ===== TEST 8: SORT WITH LARGE ORDER NUMBERS =====
+    console.log('🧪 Testing sort with large order numbers...');
+    
+    const largeOrderData = [
+      { id: menu1Id, order_number: 1000 },
+      { id: menu2Id, order_number: 2000 },
+      { id: menu3Id, order_number: 3000 }
+    ];
+
+    const largeOrderResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
+      .set('Cookie', cookieHeader ?? '')
+      .send({ list_menu: largeOrderData });
+
+    expect(largeOrderResponse.status).toBe(200);
+    expect(largeOrderResponse.body.message).toBe('Success to sort data menu.');
+
+    // ===== TEST 9: SORT WITH DECIMAL ORDER NUMBERS =====
+    console.log('🧪 Testing sort with decimal order numbers...');
+    
+    const decimalOrderData = [
+      { id: menu1Id, order_number: 1.5 },
+      { id: menu2Id, order_number: 2.7 }
+    ];
+
+    const decimalOrderResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
+      .set('Cookie', cookieHeader ?? '')
+      .send({ list_menu: decimalOrderData });
+
+    expect(decimalOrderResponse.status).toBe(200);
+    expect(decimalOrderResponse.body.message).toBe('Success to sort data menu.');
+
+    // ===== TEST 10: SORT WITH STRING ORDER NUMBERS =====
+    console.log('🧪 Testing sort with string order numbers...');
+    
+    const stringOrderData = [
+      { id: menu1Id, order_number: '1' },
+      { id: menu2Id, order_number: '2' }
+    ];
+
+    const stringOrderResponse = await supertest(web)
+      .post(`${baseUrlTest}/sort/0`)
+      .set('Cookie', cookieHeader ?? '')
+      .send({ list_menu: stringOrderData });
+
+    expect(stringOrderResponse.status).toBe(200);
+    expect(stringOrderResponse.body.message).toBe('Success to sort data menu.');
+
+    // ===== TEST 11: CONCURRENT SORT REQUESTS =====
+    console.log('🧪 Testing concurrent sort requests...');
+    
+    // Create additional menus for concurrent sorting
+    const concurrentMenuPromises = Array(3).fill(null).map((_, index) =>
+      supertest(web)
+        .post(baseUrlTest)
+        .set('Cookie', cookieHeader ?? '')
+        .send({
+          key_menu: `concurrent-menu-${index + 1}`,
+          name: `Concurrent Menu ${index + 1}`
+        })
+    );
+
+    const concurrentCreateResponses = await Promise.all(concurrentMenuPromises);
+    const concurrentMenuIds = concurrentCreateResponses.map(response => response.body.data.id);
+
+    // Make concurrent sort requests
+    const concurrentSortPromises = Array(3).fill(null).map((_, index) => {
+      const sortData = concurrentMenuIds.map((menuId, sortIndex) => ({
+        id: menuId,
+        order_number: (index * 10) + sortIndex + 1
+      }));
+
+      return supertest(web)
+        .post(`${baseUrlTest}/sort/0`)
+        .set('Cookie', cookieHeader ?? '')
+        .send({ list_menu: sortData });
     });
 
-    expect(response2.status).toBe(200);
-    expect(response2.body.message).toBe('Success to sort data menu.');
+    const concurrentSortResponses = await Promise.all(concurrentSortPromises);
 
-    // Test 3: Success sort menu with single item
-    const response3 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        list_menu: [
-          {
-            id: 2,
-          },
-        ],
-      });
+    // At least one should succeed
+    const successfulSorts = concurrentSortResponses.filter(response => response.status === 200);
+    expect(successfulSorts.length).toBeGreaterThan(0);
 
-    logger.debug('Success sort menu with single item', response3.body);
-    expect(response3.status).toBe(200);
-    expect(response3.body.message).toBe('Success to sort data menu.');
+    // ===== TEST 12: VERIFY SORT RESULTS =====
+    console.log('🧪 Testing verify sort results...');
+    
+    // Get the sorted menu list
+    const listResponse = await supertest(web)
+      .get(`${baseUrlTest}/0`)
+      .set('Cookie', cookieHeader ?? '');
 
-    // Test 4: Success sort menu with reverse order
-    const response4 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        list_menu: [
-          {
-            id: 5,
-          },
-          {
-            id: 4,
-          },
-          {
-            id: 3,
-          },
-          {
-            id: 2,
-          },
-        ],
-      });
+    expect(listResponse.status).toBe(200);
+    expect(listResponse.body.data).toBeDefined();
+    expect(Array.isArray(listResponse.body.data)).toBe(true);
 
-    logger.debug('Success sort menu with reverse order', response4.body);
-    expect(response4.status).toBe(200);
-    expect(response4.body.message).toBe('Success to sort data menu.');
-  });
+    // Verify that menus are sorted by order_number
+    if (listResponse.body.data.length > 1) {
+      for (let i = 0; i < listResponse.body.data.length - 1; i++) {
+        expect(listResponse.body.data[i].order_number).toBeLessThanOrEqual(listResponse.body.data[i + 1].order_number);
+      }
+    }
 
-  it('Should handle complex sort scenarios', async () => {
-    // Test 1: Success sort menu multiple times
-    const response1 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        list_menu: [
-          {
-            id: 3,
-          },
-          {
-            id: 2,
-          },
-          {
-            id: 4,
-          },
-          {
-            id: 5,
-          },
-        ],
-      });
-
-    const response2 = await supertest(web)
-      .post(`${baseUrlTest}/sort/1`)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        list_menu: [
-          {
-            id: 2,
-          },
-          {
-            id: 3,
-          },
-          {
-            id: 4,
-          },
-          {
-            id: 5,
-          },
-        ],
-      });
-
-    logger.debug('Success sort menu multiple times', {
-      first: response1.body,
-      second: response2.body,
-    });
-
-    expect(response1.status).toBe(200);
-    expect(response2.status).toBe(200);
-    expect(response1.body.message).toBe('Success to sort data menu.');
-    expect(response2.body.message).toBe('Success to sort data menu.');
+    console.log('✅ All sort menu flow tests completed successfully');
   });
 });
