@@ -73,7 +73,7 @@ export class AuthController {
       res.status(200).json({
         message: 'Profile retrieved successfully',
         profile: data,
-        menu
+        menu,
       });
     } catch (e) {
       next(e);
@@ -88,14 +88,10 @@ export class AuthController {
 
       const dataUpdate = {
         ...req.body,
-        email: req.user.email
-      }
+        email: req.user.email,
+      };
 
-      const data = await UserService.update(
-        req.user.id,
-        dataUpdate,
-        req.user
-      );
+      const data = await UserService.update(req.user.id, dataUpdate, req.user);
 
       res.status(200).json({
         message: 'Success to edit data user.',

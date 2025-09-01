@@ -21,14 +21,14 @@ const baseSchema = z.object({
   role_id: z
     .number({ message: `The role is required!` })
     .min(1, `The role is required!`),
-    // .min(1, `The birthdate is required!`)
-    // .regex(/^\d{4}-\d{2}-\d{2}$/, 'The birthdate format must be: YYYY-MM-DD!'),
+  // .min(1, `The birthdate is required!`)
+  // .regex(/^\d{4}-\d{2}-\d{2}$/, 'The birthdate format must be: YYYY-MM-DD!'),
 });
 
 export const validateStoreUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     baseSchema.parse(req.body);
@@ -48,14 +48,14 @@ export const validateStoreUser = async (
 export const validateUpdateUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     baseSchema.parse(req.body);
 
     const userExist = await UserService.detail(
       prismaClient,
-      parseInt(req.params.id)
+      parseInt(req.params.id),
     );
 
     if (!userExist) {
@@ -64,7 +64,7 @@ export const validateUpdateUser = async (
 
     const emailExist = await UserService.detailFromEmail(
       req.body.email,
-      parseInt(req.params.id)
+      parseInt(req.params.id),
     );
 
     if (emailExist) {
@@ -75,23 +75,23 @@ export const validateUpdateUser = async (
   } catch (e) {
     next(e);
   }
-}
+};
 
 export const validateResetPasswordUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userExist = await UserService.detail(
       prismaClient,
-      parseInt(req.params.id)
+      parseInt(req.params.id),
     );
 
     if (!userExist) {
       return next(new ResponseError(404, ['The user does not exist!']));
     }
-    
+
     next();
   } catch (e) {
     next(e);

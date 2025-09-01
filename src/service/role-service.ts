@@ -1,7 +1,11 @@
 import { Prisma } from '@prisma/client';
 import { prismaClient } from '../config/database';
 import { IRequestList } from '../model/global-model';
-import { IRequestRole, IRoleCreateData, IRoleUpdateData } from '../model/role-model';
+import {
+  IRequestRole,
+  IRoleCreateData,
+  IRoleUpdateData,
+} from '../model/role-model';
 import { IUserObject } from '../model/user-model';
 import { pagination } from '../helper/pagination-helper';
 import { roleRepository } from '../repository';

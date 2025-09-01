@@ -14,17 +14,17 @@ export class TestHelper {
   static async refreshDatabase() {
     try {
       console.log('🔄 Refreshing database...');
-      
+
       // Disconnect and reconnect to ensure clean state
       await prismaClient.$disconnect();
-      
+
       // Clean database terlebih dahulu (in correct order due to foreign keys)
       await prismaClient.accessToken.deleteMany({});
       await prismaClient.roleMenu.deleteMany({});
       await prismaClient.user.deleteMany({});
       await prismaClient.role.deleteMany({});
       await prismaClient.menu.deleteMany({});
-      
+
       // Reset sequence dengan error handling
       try {
         await prismaClient.$executeRaw`ALTER SEQUENCE users_id_seq RESTART WITH 1;`;
@@ -32,28 +32,33 @@ export class TestHelper {
         await prismaClient.$executeRaw`ALTER SEQUENCE menus_id_seq RESTART WITH 1;`;
         await prismaClient.$executeRaw`ALTER SEQUENCE access_tokens_id_seq RESTART WITH 1;`;
       } catch (seqError) {
-        console.log('⚠️ Sequence reset warning (might not exist):', seqError.message);
+        console.log(
+          '⚠️ Sequence reset warning (might not exist):',
+          seqError.message,
+        );
       }
-      
+
       // Wait a bit to ensure all connections are properly closed
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Disconnect and reconnect to ensure clean state
       await prismaClient.$disconnect();
       await prismaClient.$connect();
-      
+
       // Seed data dengan timeout yang lebih lama
       execSync('npm run seed:user', { stdio: 'inherit', timeout: 60000 });
-      
+
       // Verify database is clean
       const userCount = await prismaClient.user.count();
       const roleCount = await prismaClient.role.count();
       const menuCount = await prismaClient.menu.count();
-      
-      console.log(`✅ Database refreshed successfully - Users: ${userCount}, Roles: ${roleCount}, Menus: ${menuCount}`);
-      
+
+      console.log(
+        `✅ Database refreshed successfully - Users: ${userCount}, Roles: ${roleCount}, Menus: ${menuCount}`,
+      );
+
       // Small delay to ensure database is fully ready
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     } catch (error) {
       console.error('❌ Error refreshing database:', error.message);
       throw error;
@@ -71,7 +76,7 @@ export class TestHelper {
       await prismaClient.user.deleteMany({});
       await prismaClient.role.deleteMany({});
       await prismaClient.menu.deleteMany({});
-      
+
       console.log('🧹 Database cleaned up');
     } catch (error) {
       console.error('❌ Error cleaning up database:', error.message);

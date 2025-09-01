@@ -35,14 +35,14 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL MENU UPDATE =====
     console.log('🧪 Testing successful menu update...');
-    
+
     // Create a test menu first
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu',
-        name: 'Test Menu'
+        name: 'Test Menu',
       });
 
     expect(createResponse.status).toBe(200);
@@ -51,7 +51,7 @@ describe('Menu Update Business Flow', () => {
     // Update the menu
     const updateData = {
       key_menu: 'updated-menu',
-      name: 'Updated Menu'
+      name: 'Updated Menu',
     };
 
     const updateResponse = await supertest(web)
@@ -69,7 +69,7 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT MENU ID =====
     console.log('🧪 Testing non-existent menu ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .patch(`${baseUrlTest}/999`)
       .set('Cookie', cookieHeader ?? '')
@@ -80,14 +80,14 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 3: DUPLICATE KEY_MENU =====
     console.log('🧪 Testing duplicate key_menu...');
-    
+
     // Create first menu
     const menu1Response = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'menu-1',
-        name: 'Menu 1'
+        name: 'Menu 1',
       });
 
     expect(menu1Response.status).toBe(200);
@@ -99,7 +99,7 @@ describe('Menu Update Business Flow', () => {
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'menu-2',
-        name: 'Menu 2'
+        name: 'Menu 2',
       });
 
     expect(menu2Response.status).toBe(200);
@@ -111,27 +111,29 @@ describe('Menu Update Business Flow', () => {
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'menu-1',
-        name: 'Updated Menu 2'
+        name: 'Updated Menu 2',
       });
 
     expect(duplicateResponse.status).toBe(400);
-    expect(duplicateResponse.body.errors).toContain('The key menu cannot be the same!');
+    expect(duplicateResponse.body.errors).toContain(
+      'The key menu cannot be the same!',
+    );
 
     // ===== TEST 4: VALIDATION ERRORS FOR MISSING REQUIRED FIELDS =====
     console.log('🧪 Testing validation errors for missing required fields...');
-    
+
     const validationTestCases = [
-      { 
-        data: {}, 
-        expectedErrors: ['The key menu is required!', 'The name is required!'] 
+      {
+        data: {},
+        expectedErrors: ['The key menu is required!', 'The name is required!'],
       },
-      { 
-        data: { key_menu: 'test' }, 
-        expectedErrors: ['The name is required!'] 
+      {
+        data: { key_menu: 'test' },
+        expectedErrors: ['The name is required!'],
       },
-      { 
-        data: { name: 'Test Menu' }, 
-        expectedErrors: ['The key menu is required!'] 
+      {
+        data: { name: 'Test Menu' },
+        expectedErrors: ['The key menu is required!'],
       },
     ];
 
@@ -142,29 +144,33 @@ describe('Menu Update Business Flow', () => {
         .send(testCase.data);
 
       expect(validationResponse.status).toBe(400);
-      expect(validationResponse.body.errors).toEqual(expect.arrayContaining(testCase.expectedErrors));
+      expect(validationResponse.body.errors).toEqual(
+        expect.arrayContaining(testCase.expectedErrors),
+      );
     }
 
     // ===== TEST 5: VALIDATION ERRORS FOR EMPTY FIELDS =====
     console.log('🧪 Testing validation errors for empty fields...');
-    
+
     const emptyKeyMenuResponse = await supertest(web)
       .patch(`${baseUrlTest}/${menuId1}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: '',
-        name: 'Test Menu'
+        name: 'Test Menu',
       });
 
     expect(emptyKeyMenuResponse.status).toBe(400);
-    expect(emptyKeyMenuResponse.body.errors).toContain('The key menu is required!');
+    expect(emptyKeyMenuResponse.body.errors).toContain(
+      'The key menu is required!',
+    );
 
     const emptyNameResponse = await supertest(web)
       .patch(`${baseUrlTest}/${menuId1}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu-3',
-        name: ''
+        name: '',
       });
 
     expect(emptyNameResponse.status).toBe(400);
@@ -172,13 +178,13 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 6: UPDATE WITH OPTIONAL FIELDS =====
     console.log('🧪 Testing update with optional fields...');
-    
+
     const optionalFieldsData = {
       key_menu: 'optional-menu',
       name: 'Optional Menu',
       url: '/optional-menu',
       order_number: 5,
-      active: 'Inactive'
+      active: 'Inactive',
     };
 
     const optionalFieldsResponse = await supertest(web)
@@ -187,7 +193,9 @@ describe('Menu Update Business Flow', () => {
       .send(optionalFieldsData);
 
     expect(optionalFieldsResponse.status).toBe(200);
-    expect(optionalFieldsResponse.body.data.key_menu).toBe(optionalFieldsData.key_menu);
+    expect(optionalFieldsResponse.body.data.key_menu).toBe(
+      optionalFieldsData.key_menu,
+    );
     expect(optionalFieldsResponse.body.data.name).toBe(optionalFieldsData.name);
     expect(optionalFieldsResponse.body.data.url).toBe(optionalFieldsData.url);
     // Note: order_number and active are not updated in this API, they remain unchanged
@@ -196,14 +204,14 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 7: UPDATE PARENT MENU =====
     console.log('🧪 Testing update parent menu...');
-    
+
     // Create a new menu for parent update test
     const parentMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-menu',
-        name: 'Parent Menu'
+        name: 'Parent Menu',
       });
 
     expect(parentMenuResponse.status).toBe(200);
@@ -215,7 +223,7 @@ describe('Menu Update Business Flow', () => {
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'submenu',
-        name: 'Submenu'
+        name: 'Submenu',
       });
 
     expect(submenuResponse.status).toBe(200);
@@ -228,7 +236,7 @@ describe('Menu Update Business Flow', () => {
       .send({
         key_menu: 'submenu',
         name: 'Submenu',
-        menu_id: parentMenuId
+        menu_id: parentMenuId,
       });
 
     expect(parentUpdateResponse.status).toBe(200);
@@ -237,14 +245,14 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 8: INVALID PARENT MENU ID =====
     console.log('🧪 Testing invalid parent menu ID...');
-    
+
     const invalidParentResponse = await supertest(web)
       .patch(`${baseUrlTest}/${submenuId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'submenu',
         name: 'Submenu',
-        menu_id: 999999
+        menu_id: 999999,
       });
 
     // Note: menu_id is not validated or updated in the update endpoint
@@ -257,11 +265,11 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 9: SPECIAL CHARACTERS IN FIELDS =====
     console.log('🧪 Testing special characters in fields...');
-    
+
     const specialCharData = {
       key_menu: 'special-menu-123',
       name: 'Special Menu & More',
-      url: '/special/menu?param=value'
+      url: '/special/menu?param=value',
     };
 
     const specialCharResponse = await supertest(web)
@@ -270,19 +278,21 @@ describe('Menu Update Business Flow', () => {
       .send(specialCharData);
 
     expect(specialCharResponse.status).toBe(200);
-    expect(specialCharResponse.body.data.key_menu).toBe(specialCharData.key_menu);
+    expect(specialCharResponse.body.data.key_menu).toBe(
+      specialCharData.key_menu,
+    );
     expect(specialCharResponse.body.data.name).toBe(specialCharData.name);
     expect(specialCharResponse.body.data.url).toBe(specialCharData.url);
 
     // ===== TEST 10: UPDATE WITH EXTRA FIELDS =====
     console.log('🧪 Testing update with extra fields...');
-    
+
     const extraFieldsData = {
       key_menu: 'extra-menu',
       name: 'Extra Menu',
       extra_field: 'should be ignored',
       another_field: 123,
-      nested_field: { key: 'value' }
+      nested_field: { key: 'value' },
     };
 
     const extraFieldsResponse = await supertest(web)
@@ -291,7 +301,9 @@ describe('Menu Update Business Flow', () => {
       .send(extraFieldsData);
 
     expect(extraFieldsResponse.status).toBe(200);
-    expect(extraFieldsResponse.body.data.key_menu).toBe(extraFieldsData.key_menu);
+    expect(extraFieldsResponse.body.data.key_menu).toBe(
+      extraFieldsData.key_menu,
+    );
     expect(extraFieldsResponse.body.data.name).toBe(extraFieldsData.name);
     expect(extraFieldsResponse.body.data.extra_field).toBeUndefined();
     expect(extraFieldsResponse.body.data.another_field).toBeUndefined();
@@ -299,14 +311,14 @@ describe('Menu Update Business Flow', () => {
 
     // ===== TEST 11: PARTIAL UPDATE =====
     console.log('🧪 Testing partial update...');
-    
+
     // Create a menu for partial update
     const partialMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'partial-menu',
-        name: 'Partial Menu'
+        name: 'Partial Menu',
       });
 
     expect(partialMenuResponse.status).toBe(200);
@@ -317,42 +329,48 @@ describe('Menu Update Business Flow', () => {
       .patch(`${baseUrlTest}/${partialMenuId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Updated Partial Menu'
+        name: 'Updated Partial Menu',
       });
 
     expect(partialUpdateResponse.status).toBe(400);
-    expect(partialUpdateResponse.body.errors).toContain('The key menu is required!');
+    expect(partialUpdateResponse.body.errors).toContain(
+      'The key menu is required!',
+    );
 
     // ===== TEST 12: CONCURRENT UPDATES =====
     console.log('🧪 Testing concurrent updates...');
-    
+
     // Create a menu for concurrent updates
     const concurrentMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'concurrent-menu',
-        name: 'Concurrent Menu'
+        name: 'Concurrent Menu',
       });
 
     expect(concurrentMenuResponse.status).toBe(200);
     const concurrentMenuId = concurrentMenuResponse.body.data.id;
 
     // Make concurrent update requests
-    const concurrentPromises = Array(3).fill(null).map((_, index) =>
-      supertest(web)
-        .patch(`${baseUrlTest}/${concurrentMenuId}`)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          key_menu: `concurrent-menu-${index + 1}`,
-          name: `Concurrent Menu ${index + 1}`
-        })
-    );
+    const concurrentPromises = Array(3)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .patch(`${baseUrlTest}/${concurrentMenuId}`)
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            key_menu: `concurrent-menu-${index + 1}`,
+            name: `Concurrent Menu ${index + 1}`,
+          }),
+      );
 
     const concurrentResponses = await Promise.all(concurrentPromises);
 
     // At least one should succeed
-    const successfulUpdates = concurrentResponses.filter(response => response.status === 200);
+    const successfulUpdates = concurrentResponses.filter(
+      (response) => response.status === 200,
+    );
     expect(successfulUpdates.length).toBeGreaterThan(0);
 
     console.log('✅ All update menu flow tests completed successfully');

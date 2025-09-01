@@ -1,6 +1,11 @@
 import { prismaClient } from '../../config/database';
 import { IAuthRepository } from '../contract/auth-repository.contract';
-import { IUserWithRoleBasic, IUserWithRoleAndMenus, IMenuBasic, IAccessTokenBasic } from '../../model/auth-model';
+import {
+  IUserWithRoleBasic,
+  IUserWithRoleAndMenus,
+  IMenuBasic,
+  IAccessTokenBasic,
+} from '../../model/auth-model';
 import { IRoleMenuPerm } from '../../model/role-menu-model';
 
 export class AuthRepository implements IAuthRepository {
@@ -11,7 +16,9 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  async findUserWithRoleAndMenus(userId: number): Promise<IUserWithRoleAndMenus | null> {
+  async findUserWithRoleAndMenus(
+    userId: number,
+  ): Promise<IUserWithRoleAndMenus | null> {
     return await prismaClient.user.findUnique({
       where: { id: userId },
       include: {
@@ -48,7 +55,10 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  async findRoleMenuByMenuAndRole(menuId: number, roleId: number): Promise<IRoleMenuPerm | null> {
+  async findRoleMenuByMenuAndRole(
+    menuId: number,
+    roleId: number,
+  ): Promise<IRoleMenuPerm | null> {
     return await prismaClient.roleMenu.findFirst({
       where: {
         menu_id: menuId,
@@ -57,7 +67,9 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  async findAccessTokenByRefreshToken(refreshToken: string): Promise<IAccessTokenBasic | null> {
+  async findAccessTokenByRefreshToken(
+    refreshToken: string,
+  ): Promise<IAccessTokenBasic | null> {
     return await prismaClient.accessToken.findUnique({
       where: {
         refresh_token: refreshToken,

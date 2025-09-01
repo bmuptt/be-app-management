@@ -35,7 +35,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL TAKE OUT EXISTING USER =====
     console.log('🧪 Testing successful take out existing user...');
-    
+
     // First create a new user to take out
     const createResponse = await supertest(web)
       .post(baseUrlTest)
@@ -45,7 +45,7 @@ describe('Take Out User Business Flow', () => {
         name: 'Test User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse.status).toBe(200);
@@ -63,17 +63,19 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT USER ID =====
     console.log('🧪 Testing non-existent user ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .post(`${baseUrlTest}/take-out/999`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain('The user does not exist!');
+    expect(nonExistentResponse.body.errors).toContain(
+      'The user does not exist!',
+    );
 
     // ===== TEST 3: INVALID USER ID FORMAT =====
     console.log('🧪 Testing invalid user ID format...');
-    
+
     const invalidFormatResponse = await supertest(web)
       .post(`${baseUrlTest}/take-out/invalid`)
       .set('Cookie', cookieHeader ?? '');
@@ -83,7 +85,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 4: ZERO USER ID =====
     console.log('🧪 Testing zero user ID...');
-    
+
     const zeroResponse = await supertest(web)
       .post(`${baseUrlTest}/take-out/0`)
       .set('Cookie', cookieHeader ?? '');
@@ -93,7 +95,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 5: NEGATIVE USER ID =====
     console.log('🧪 Testing negative user ID...');
-    
+
     const negativeResponse = await supertest(web)
       .post(`${baseUrlTest}/take-out/-1`)
       .set('Cookie', cookieHeader ?? '');
@@ -103,7 +105,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 6: VERY LARGE USER ID =====
     console.log('🧪 Testing very large user ID...');
-    
+
     const largeResponse = await supertest(web)
       .post(`${baseUrlTest}/take-out/999999999`)
       .set('Cookie', cookieHeader ?? '');
@@ -113,7 +115,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 7: TAKE OUT ADMIN USER =====
     console.log('🧪 Testing take out admin user...');
-    
+
     const adminResponse = await supertest(web)
       .post(`${baseUrlTest}/take-out/1`)
       .set('Cookie', cookieHeader ?? '');
@@ -126,7 +128,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 8: MULTIPLE TAKE OUT REQUESTS FOR SAME USER =====
     console.log('🧪 Testing multiple take out requests for same user...');
-    
+
     // First create a new user
     const createResponse2 = await supertest(web)
       .post(baseUrlTest)
@@ -136,7 +138,7 @@ describe('Take Out User Business Flow', () => {
         name: 'Test User 2',
         gender: 'Female',
         birthdate: '1995-05-15',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse2.status).toBe(200);
@@ -160,7 +162,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 9: CONCURRENT TAKE OUT REQUESTS =====
     console.log('🧪 Testing concurrent take out requests...');
-    
+
     // First create a new user
     const createResponse3 = await supertest(web)
       .post(baseUrlTest)
@@ -170,7 +172,7 @@ describe('Take Out User Business Flow', () => {
         name: 'Test User 3',
         gender: 'Male',
         birthdate: '1988-12-25',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse3.status).toBe(200);
@@ -186,7 +188,7 @@ describe('Take Out User Business Flow', () => {
         .set('Cookie', cookieHeader ?? ''),
       supertest(web)
         .post(`${baseUrlTest}/take-out/${userId3}`)
-        .set('Cookie', cookieHeader ?? '')
+        .set('Cookie', cookieHeader ?? ''),
     ];
 
     const concurrentResponses = await Promise.all(promises);
@@ -199,7 +201,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 10: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     // First create a new user
     const createResponse4 = await supertest(web)
       .post(baseUrlTest)
@@ -209,7 +211,7 @@ describe('Take Out User Business Flow', () => {
         name: 'Test User 4',
         gender: 'Female',
         birthdate: '1992-03-20',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse4.status).toBe(200);
@@ -222,14 +224,16 @@ describe('Take Out User Business Flow', () => {
     expect(structureResponse.status).toBe(200);
     expect(structureResponse.body).toHaveProperty('message');
     expect(structureResponse.body).toHaveProperty('data');
-    expect(structureResponse.body.message).toBe('Success to reset password user.');
+    expect(structureResponse.body.message).toBe(
+      'Success to reset password user.',
+    );
     expect(structureResponse.body.data).toHaveProperty('id');
     expect(structureResponse.body.data).toHaveProperty('active');
     expect(structureResponse.body.data).toHaveProperty('updated_by');
 
     // ===== TEST 11: UPDATE THE UPDATED_BY FIELD CORRECTLY =====
     console.log('🧪 Testing update the updated_by field correctly...');
-    
+
     // First create a new user
     const createResponse5 = await supertest(web)
       .post(baseUrlTest)
@@ -239,7 +243,7 @@ describe('Take Out User Business Flow', () => {
         name: 'Test User 5',
         gender: 'Male',
         birthdate: '1985-07-10',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse5.status).toBe(200);
@@ -254,7 +258,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 12: TAKE OUT FOR NEWLY CREATED USER =====
     console.log('🧪 Testing take out for newly created user...');
-    
+
     // First create a new user
     const createResponse6 = await supertest(web)
       .post(baseUrlTest)
@@ -264,7 +268,7 @@ describe('Take Out User Business Flow', () => {
         name: 'New User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse6.status).toBe(200);
@@ -281,7 +285,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 13: TAKE OUT FOR MULTIPLE USERS =====
     console.log('🧪 Testing take out for multiple users...');
-    
+
     // Create multiple users first
     const users = [
       {
@@ -289,22 +293,22 @@ describe('Take Out User Business Flow', () => {
         name: 'User One',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       },
       {
         email: 'user2@example.com',
         name: 'User Two',
         gender: 'Female',
         birthdate: '1995-05-15',
-        role_id: 1
+        role_id: 1,
       },
       {
         email: 'user3@example.com',
         name: 'User Three',
         gender: 'Male',
         birthdate: '1988-12-25',
-        role_id: 1
-      }
+        role_id: 1,
+      },
     ];
 
     const createdUserIds: number[] = [];
@@ -332,7 +336,7 @@ describe('Take Out User Business Flow', () => {
 
     // ===== TEST 14: TAKE OUT AFTER USER HAS BEEN RESET =====
     console.log('🧪 Testing take out after user has been reset...');
-    
+
     // First create a new user
     const createResponse7 = await supertest(web)
       .post(baseUrlTest)
@@ -342,7 +346,7 @@ describe('Take Out User Business Flow', () => {
         name: 'Reset User',
         gender: 'Female',
         birthdate: '1993-09-15',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse7.status).toBe(200);

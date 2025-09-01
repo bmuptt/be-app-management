@@ -1,14 +1,18 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prismaClient } from '../../config/database';
 import { IRoleRepository } from '../contract/role-repository.contract';
-import { IRoleObject, IRoleCreateData, IRoleUpdateData } from '../../model/role-model';
+import {
+  IRoleObject,
+  IRoleCreateData,
+  IRoleUpdateData,
+} from '../../model/role-model';
 
 export class RoleRepository implements IRoleRepository {
   async findMany(
-    where: Prisma.RoleWhereInput, 
-    orderBy: Prisma.RoleOrderByWithRelationInput[], 
-    skip: number, 
-    take: number
+    where: Prisma.RoleWhereInput,
+    orderBy: Prisma.RoleOrderByWithRelationInput[],
+    skip: number,
+    take: number,
   ): Promise<IRoleObject[]> {
     return await prismaClient.role.findMany({
       where,
@@ -64,7 +68,7 @@ export class RoleRepository implements IRoleRepository {
         where: { role_id: id },
         data: { role_id: null },
       });
-  
+
       return await tx.role.delete({
         where: { id },
       });

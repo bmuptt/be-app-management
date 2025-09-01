@@ -35,14 +35,14 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL MENU ACTIVATION =====
     console.log('🧪 Testing successful menu activation...');
-    
+
     // Create a test menu first
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu',
-        name: 'Test Menu'
+        name: 'Test Menu',
       });
 
     expect(createResponse.status).toBe(200);
@@ -67,7 +67,7 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT MENU ID =====
     console.log('🧪 Testing non-existent menu ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .put(`${baseUrlTest}/active/999999`)
       .set('Cookie', cookieHeader ?? '');
@@ -77,7 +77,7 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 3: NEGATIVE MENU ID =====
     console.log('🧪 Testing negative menu ID...');
-    
+
     const negativeIdResponse = await supertest(web)
       .put(`${baseUrlTest}/active/-1`)
       .set('Cookie', cookieHeader ?? '');
@@ -87,7 +87,7 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 4: ZERO MENU ID =====
     console.log('🧪 Testing zero menu ID...');
-    
+
     const zeroIdResponse = await supertest(web)
       .put(`${baseUrlTest}/active/0`)
       .set('Cookie', cookieHeader ?? '');
@@ -97,7 +97,7 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 5: VERY LARGE MENU ID =====
     console.log('🧪 Testing very large menu ID...');
-    
+
     const largeIdResponse = await supertest(web)
       .put(`${baseUrlTest}/active/999999999999`)
       .set('Cookie', cookieHeader ?? '');
@@ -107,7 +107,7 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 6: INVALID MENU ID FORMAT =====
     console.log('🧪 Testing invalid menu ID format...');
-    
+
     const invalidIdResponse = await supertest(web)
       .put(`${baseUrlTest}/active/invalid`)
       .set('Cookie', cookieHeader ?? '');
@@ -117,14 +117,14 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 7: ACTIVATE ALREADY ACTIVE MENU =====
     console.log('🧪 Testing activate already active menu...');
-    
+
     // Create another menu
     const activeMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'active-menu',
-        name: 'Active Menu'
+        name: 'Active Menu',
       });
 
     expect(activeMenuResponse.status).toBe(200);
@@ -140,14 +140,14 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 8: ACTIVATE MENU WITH SUBMENUS =====
     console.log('🧪 Testing activate menu with submenus...');
-    
+
     // Create a parent menu
     const parentResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-menu',
-        name: 'Parent Menu'
+        name: 'Parent Menu',
       });
 
     expect(parentResponse.status).toBe(200);
@@ -160,7 +160,7 @@ describe('Menu Active Business Flow', () => {
       .send({
         key_menu: 'submenu',
         name: 'Submenu',
-        menu_id: parentId
+        menu_id: parentId,
       });
 
     expect(submenuResponse.status).toBe(200);
@@ -184,14 +184,14 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 9: RESPONSE STRUCTURE VALIDATION =====
     console.log('🧪 Testing response structure validation...');
-    
+
     // Create a test menu for structure validation
     const structureMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'structure-menu',
-        name: 'Structure Menu'
+        name: 'Structure Menu',
       });
 
     expect(structureMenuResponse.status).toBe(200);
@@ -222,14 +222,14 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 10: MULTIPLE ACTIVATION REQUESTS =====
     console.log('🧪 Testing multiple activation requests...');
-    
+
     // Create a test menu for multiple activation requests
     const multipleMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'multiple-menu',
-        name: 'Multiple Menu'
+        name: 'Multiple Menu',
       });
 
     expect(multipleMenuResponse.status).toBe(200);
@@ -264,40 +264,44 @@ describe('Menu Active Business Flow', () => {
 
     // ===== TEST 11: CONCURRENT ACTIVATION REQUESTS =====
     console.log('🧪 Testing concurrent activation requests...');
-    
+
     // Create multiple menus for concurrent activation
-    const concurrentMenuPromises = Array(3).fill(null).map((_, index) =>
-      supertest(web)
-        .post(baseUrlTest)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          key_menu: `concurrent-menu-${index + 1}`,
-          name: `Concurrent Menu ${index + 1}`
-        })
-    );
+    const concurrentMenuPromises = Array(3)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .post(baseUrlTest)
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            key_menu: `concurrent-menu-${index + 1}`,
+            name: `Concurrent Menu ${index + 1}`,
+          }),
+      );
 
     const concurrentCreateResponses = await Promise.all(concurrentMenuPromises);
-    const menuIds = concurrentCreateResponses.map(response => response.body.data.id);
+    const menuIds = concurrentCreateResponses.map(
+      (response) => response.body.data.id,
+    );
 
     // Deactivate all menus
-    const deactivatePromises = menuIds.map(menuId =>
+    const deactivatePromises = menuIds.map((menuId) =>
       supertest(web)
         .delete(`${baseUrlTest}/${menuId}`)
-        .set('Cookie', cookieHeader ?? '')
+        .set('Cookie', cookieHeader ?? ''),
     );
 
     await Promise.all(deactivatePromises);
 
     // Activate all menus concurrently
-    const activatePromises = menuIds.map(menuId =>
+    const activatePromises = menuIds.map((menuId) =>
       supertest(web)
         .put(`${baseUrlTest}/active/${menuId}`)
-        .set('Cookie', cookieHeader ?? '')
+        .set('Cookie', cookieHeader ?? ''),
     );
 
     const concurrentActivateResponses = await Promise.all(activatePromises);
 
-    concurrentActivateResponses.forEach(response => {
+    concurrentActivateResponses.forEach((response) => {
       expect(response.status).toBe(200);
       expect(response.body.data.active).toBe('Active');
     });

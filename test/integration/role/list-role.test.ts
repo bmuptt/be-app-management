@@ -34,7 +34,7 @@ describe('List Role Business Flow', () => {
     jest.setTimeout(30000);
     // ===== TEST 1: BASIC LIST ROLES =====
     console.log('🧪 Testing basic list roles...');
-    
+
     const response = await supertest(web)
       .get(baseUrlTest)
       .set('Cookie', cookieHeader ?? '');
@@ -49,7 +49,7 @@ describe('List Role Business Flow', () => {
 
     // ===== TEST 2: PAGINATION =====
     console.log('🧪 Testing pagination...');
-    
+
     const paginationResponse = await supertest(web)
       .get(`${baseUrlTest}?page=1&limit=5`)
       .set('Cookie', cookieHeader ?? '');
@@ -60,13 +60,13 @@ describe('List Role Business Flow', () => {
 
     // ===== TEST 3: SEARCH FUNCTIONALITY =====
     console.log('🧪 Testing search functionality...');
-    
+
     // First create a role with specific name
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Searchable Role'
+        name: 'Searchable Role',
       });
 
     expect(createResponse.status).toBe(200);
@@ -78,17 +78,21 @@ describe('List Role Business Flow', () => {
 
     expect(searchResponse.status).toBe(200);
     expect(searchResponse.body.data.length).toBeGreaterThan(0);
-    expect(searchResponse.body.data.some((role: any) => role.name.includes('Searchable'))).toBe(true);
+    expect(
+      searchResponse.body.data.some((role: any) =>
+        role.name.includes('Searchable'),
+      ),
+    ).toBe(true);
 
     // ===== TEST 4: CASE-INSENSITIVE SEARCH =====
     console.log('🧪 Testing case-insensitive search...');
-    
+
     // Create a role with specific name
     const createCaseResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'CaseSensitive Role'
+        name: 'CaseSensitive Role',
       });
 
     expect(createCaseResponse.status).toBe(200);
@@ -100,11 +104,15 @@ describe('List Role Business Flow', () => {
 
     expect(caseSearchResponse.status).toBe(200);
     expect(caseSearchResponse.body.data.length).toBeGreaterThan(0);
-    expect(caseSearchResponse.body.data.some((role: any) => role.name.includes('CaseSensitive'))).toBe(true);
+    expect(
+      caseSearchResponse.body.data.some((role: any) =>
+        role.name.includes('CaseSensitive'),
+      ),
+    ).toBe(true);
 
     // ===== TEST 5: SORTING =====
     console.log('🧪 Testing sorting...');
-    
+
     // Sort by name ascending
     const sortAscResponse = await supertest(web)
       .get(`${baseUrlTest}?order_field=name&order_dir=asc`)
@@ -112,7 +120,7 @@ describe('List Role Business Flow', () => {
 
     expect(sortAscResponse.status).toBe(200);
     expect(sortAscResponse.body.data.length).toBeGreaterThan(0);
-    
+
     // Check if data is sorted
     const names = sortAscResponse.body.data.map((role: any) => role.name);
     const sortedNames = [...names].sort();
@@ -125,7 +133,7 @@ describe('List Role Business Flow', () => {
 
     expect(sortDescResponse.status).toBe(200);
     expect(sortDescResponse.body.data.length).toBeGreaterThan(0);
-    
+
     // Check if data is sorted
     const descNames = sortDescResponse.body.data.map((role: any) => role.name);
     const sortedDescNames = [...descNames].sort().reverse();
@@ -138,7 +146,7 @@ describe('List Role Business Flow', () => {
 
     expect(defaultSortResponse.status).toBe(200);
     expect(defaultSortResponse.body.data.length).toBeGreaterThan(0);
-    
+
     // Check if data is sorted by id descending
     const ids = defaultSortResponse.body.data.map((role: any) => role.id);
     const sortedIds = [...ids].sort((a, b) => b - a);
@@ -146,7 +154,7 @@ describe('List Role Business Flow', () => {
 
     // ===== TEST 6: EDGE CASES =====
     console.log('🧪 Testing edge cases...');
-    
+
     // Empty search results
     const emptySearchResponse = await supertest(web)
       .get(`${baseUrlTest}?search=NonExistentRoleName`)
@@ -175,13 +183,13 @@ describe('List Role Business Flow', () => {
 
     // ===== TEST 7: SPECIAL CHARACTERS =====
     console.log('🧪 Testing special characters...');
-    
+
     // Create a role with special characters
     const specialCharResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Role with @#$%^&*()'
+        name: 'Role with @#$%^&*()',
       });
 
     expect(specialCharResponse.status).toBe(200);
@@ -199,7 +207,7 @@ describe('List Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Rôle avec caractères spéciaux 角色'
+        name: 'Rôle avec caractères spéciaux 角色',
       });
 
     expect(unicodeResponse.status).toBe(200);
@@ -214,9 +222,11 @@ describe('List Role Business Flow', () => {
 
     // ===== TEST 8: MULTIPLE QUERY PARAMETERS =====
     console.log('🧪 Testing multiple query parameters...');
-    
+
     const multipleParamsResponse = await supertest(web)
-      .get(`${baseUrlTest}?page=1&limit=10&search=Admin&order_field=name&order_dir=asc`)
+      .get(
+        `${baseUrlTest}?page=1&limit=10&search=Admin&order_field=name&order_dir=asc`,
+      )
       .set('Cookie', cookieHeader ?? '');
 
     expect(multipleParamsResponse.status).toBe(200);
@@ -225,7 +235,7 @@ describe('List Role Business Flow', () => {
 
     // ===== TEST 9: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     const structureResponse = await supertest(web)
       .get(baseUrlTest)
       .set('Cookie', cookieHeader ?? '');
@@ -235,7 +245,7 @@ describe('List Role Business Flow', () => {
     expect(structureResponse.body).toHaveProperty('total');
     expect(structureResponse.body).toHaveProperty('page');
     expect(Array.isArray(structureResponse.body.data)).toBe(true);
-    
+
     if (structureResponse.body.data.length > 0) {
       const role = structureResponse.body.data[0];
       expect(role).toHaveProperty('id');

@@ -35,7 +35,7 @@ export class MenuController {
     try {
       const data = await MenuService.listHeader(
         parseInt(req.params.id),
-        req.query
+        req.query,
       );
 
       res.status(200).json({
@@ -50,7 +50,7 @@ export class MenuController {
   static async getMenuStructure(
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       const nestedMenus = await MenuService.getAllNestedMenus();
@@ -86,7 +86,7 @@ export class MenuController {
       const data = await MenuService.update(
         parseInt(req.params.id),
         req.body,
-        req.user
+        req.user,
       );
 
       res.status(200).json({
@@ -123,7 +123,7 @@ export class MenuController {
       const data = await MenuService.changeParent(
         parseInt(req.params.id),
         req.body,
-        req.user
+        req.user,
       );
 
       res.status(200).json({

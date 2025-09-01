@@ -59,11 +59,15 @@ export class RoleController {
         return next(new ResponseError(401, ['Unauthorized!']));
       }
 
-      const data = await RoleService.update(parseInt(req.params.id), req.body, req.user)
+      const data = await RoleService.update(
+        parseInt(req.params.id),
+        req.body,
+        req.user,
+      );
 
       res.status(200).json({
         message: 'Success to edit data role.',
-        data
+        data,
       });
     } catch (e) {
       next(e);
@@ -72,12 +76,11 @@ export class RoleController {
 
   static async destroy(req: Request, res: Response, next: NextFunction) {
     try {
-
-      const data = await RoleService.destroy(parseInt(req.params.id))
+      const data = await RoleService.destroy(parseInt(req.params.id));
 
       res.status(200).json({
         message: 'Success to delete data role.',
-        data
+        data,
       });
     } catch (e) {
       next(e);

@@ -35,7 +35,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL RESET PASSWORD FOR EXISTING USER =====
     console.log('🧪 Testing successful reset password for existing user...');
-    
+
     // Test with seeded admin user (ID: 1)
     const response = await supertest(web)
       .post(`${baseUrlTest}/reset-password/1`)
@@ -50,17 +50,19 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT USER ID =====
     console.log('🧪 Testing non-existent user ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .post(`${baseUrlTest}/reset-password/999`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain('The user does not exist!');
+    expect(nonExistentResponse.body.errors).toContain(
+      'The user does not exist!',
+    );
 
     // ===== TEST 3: INVALID USER ID FORMAT =====
     console.log('🧪 Testing invalid user ID format...');
-    
+
     const invalidFormatResponse = await supertest(web)
       .post(`${baseUrlTest}/reset-password/invalid`)
       .set('Cookie', cookieHeader ?? '');
@@ -70,7 +72,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 4: ZERO USER ID =====
     console.log('🧪 Testing zero user ID...');
-    
+
     const zeroResponse = await supertest(web)
       .post(`${baseUrlTest}/reset-password/0`)
       .set('Cookie', cookieHeader ?? '');
@@ -80,7 +82,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 5: NEGATIVE USER ID =====
     console.log('🧪 Testing negative user ID...');
-    
+
     const negativeResponse = await supertest(web)
       .post(`${baseUrlTest}/reset-password/-1`)
       .set('Cookie', cookieHeader ?? '');
@@ -90,7 +92,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 6: VERY LARGE USER ID =====
     console.log('🧪 Testing very large user ID...');
-    
+
     const largeResponse = await supertest(web)
       .post(`${baseUrlTest}/reset-password/999999999`)
       .set('Cookie', cookieHeader ?? '');
@@ -100,7 +102,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 7: MULTIPLE RESET PASSWORD REQUESTS FOR SAME USER =====
     console.log('🧪 Testing multiple reset password requests for same user...');
-    
+
     // First reset
     const response1 = await supertest(web)
       .post(`${baseUrlTest}/reset-password/1`)
@@ -119,7 +121,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 8: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     const structureResponse = await supertest(web)
       .post(`${baseUrlTest}/reset-password/1`)
       .set('Cookie', cookieHeader ?? '');
@@ -127,7 +129,9 @@ describe('Reset Password User Business Flow', () => {
     expect(structureResponse.status).toBe(200);
     expect(structureResponse.body).toHaveProperty('message');
     expect(structureResponse.body).toHaveProperty('data');
-    expect(structureResponse.body.message).toBe('Success to reset password user.');
+    expect(structureResponse.body.message).toBe(
+      'Success to reset password user.',
+    );
     expect(structureResponse.body.data).toHaveProperty('id');
     expect(structureResponse.body.data).toHaveProperty('active');
     expect(structureResponse.body.data).toHaveProperty('updated_by');
@@ -137,7 +141,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 9: UPDATE THE UPDATED_BY FIELD CORRECTLY =====
     console.log('🧪 Testing update the updated_by field correctly...');
-    
+
     const updatedByResponse = await supertest(web)
       .post(`${baseUrlTest}/reset-password/1`)
       .set('Cookie', cookieHeader ?? '');
@@ -147,7 +151,7 @@ describe('Reset Password User Business Flow', () => {
 
     // ===== TEST 10: RESET PASSWORD FOR NEWLY CREATED USER =====
     console.log('🧪 Testing reset password for newly created user...');
-    
+
     // First create a new user
     const createResponse = await supertest(web)
       .post(baseUrlTest)
@@ -157,7 +161,7 @@ describe('Reset Password User Business Flow', () => {
         name: 'New User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse.status).toBe(200);

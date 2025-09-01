@@ -37,7 +37,7 @@ export class AuthService {
 
     const { token, refresh_token } = await AccessTokenService.addToken(
       prismaClient,
-      formattedUser
+      formattedUser,
     );
 
     return { token, refresh_token, user };
@@ -48,7 +48,8 @@ export class AuthService {
       throw new ResponseError(403, ['Refresh token not found']);
     }
 
-    const accessToken = await authRepository.findAccessTokenByRefreshToken(refreshToken);
+    const accessToken =
+      await authRepository.findAccessTokenByRefreshToken(refreshToken);
 
     if (!accessToken) {
       throw new ResponseError(403, ['Refresh token not found']);
@@ -68,7 +69,7 @@ export class AuthService {
 
       const { token, refresh_token } = await AccessTokenService.addToken(
         prismaClient,
-        formattedUser
+        formattedUser,
       );
 
       await AccessTokenService.destroy(prisma, refreshToken);
@@ -79,7 +80,7 @@ export class AuthService {
 
   static buildMenuTree(
     menus: IMenu[],
-    parentId: number | null = null
+    parentId: number | null = null,
   ): IMenu[] {
     return menus
       .filter((menu) => menu.menu_id === parentId)
@@ -101,7 +102,9 @@ export class AuthService {
         throw new ResponseError(404, ['Data Not Found!']);
       }
 
-      const flatMenus = user.role.menus.map((roleMenu: IRoleMenuWithMenu) => roleMenu.menu);
+      const flatMenus = user.role.menus.map(
+        (roleMenu: IRoleMenuWithMenu) => roleMenu.menu,
+      );
       nestedMenus = await AuthService.buildMenuTree(flatMenus);
     }
 
@@ -123,7 +126,11 @@ export class AuthService {
     const menu = await authRepository.findMenuByKeyMenu(key_menu);
 
     if (checkRole?.role_id && menu) {
-      const roleMenu: IRoleMenuPerm | null = await authRepository.findRoleMenuByMenuAndRole(menu.id, checkRole.role_id);
+      const roleMenu: IRoleMenuPerm | null =
+        await authRepository.findRoleMenuByMenuAndRole(
+          menu.id,
+          checkRole.role_id,
+        );
 
       if (roleMenu) {
         data.access = roleMenu.access;

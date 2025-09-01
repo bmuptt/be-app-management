@@ -8,7 +8,7 @@ export const errorMiddleware = async (
   error: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   if (error instanceof ZodError) {
     const dataError = error.errors.map((issue) => issue.message);
@@ -21,7 +21,7 @@ export const errorMiddleware = async (
       const token = req.cookies.token;
 
       if (token) {
-        AccessTokenService.destroyByToken(prismaClient, token)
+        AccessTokenService.destroyByToken(prismaClient, token);
       }
     }
 

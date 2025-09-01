@@ -50,7 +50,7 @@ export class UserService {
 
     return {
       data: users,
-      total
+      total,
     };
   }
 
@@ -60,7 +60,7 @@ export class UserService {
 
   static async detail(
     prisma: PrismaClient | Prisma.TransactionClient,
-    id: number
+    id: number,
   ) {
     return await userRepository.findUniqueWithRole(prisma, id);
   }

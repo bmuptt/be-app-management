@@ -28,11 +28,11 @@ describe('Edit Profile Business Flow', () => {
   it('Should handle complete edit profile flow including validation, data updates, and edge cases', async () => {
     // ===== TEST 1: SUCCESSFUL PROFILE EDIT =====
     console.log('🧪 Testing successful profile edit...');
-    
+
     const updateData = {
       name: 'Updated Admin Name',
       gender: 'Male',
-      birthdate: '1990-01-01'
+      birthdate: '1990-01-01',
     };
 
     const response = await supertest(web)
@@ -50,31 +50,38 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 2: VALIDATION ERRORS =====
     console.log('🧪 Testing validation errors...');
-    
+
     const validationTestCases = [
-      { 
-        data: {}, 
-        expectedErrors: ['The name is required!', 'The gender is required!', 'The birthdate is required!'] 
+      {
+        data: {},
+        expectedErrors: [
+          'The name is required!',
+          'The gender is required!',
+          'The birthdate is required!',
+        ],
       },
-      { 
-        data: { name: 'Test Name' }, 
-        expectedErrors: ['The gender is required!', 'The birthdate is required!'] 
+      {
+        data: { name: 'Test Name' },
+        expectedErrors: [
+          'The gender is required!',
+          'The birthdate is required!',
+        ],
       },
-      { 
-        data: { name: 'Test Name', gender: 'Male' }, 
-        expectedErrors: ['The birthdate is required!'] 
+      {
+        data: { name: 'Test Name', gender: 'Male' },
+        expectedErrors: ['The birthdate is required!'],
       },
-      { 
-        data: { name: '', gender: 'Male', birthdate: '1990-01-01' }, 
-        expectedErrors: ['The name must be at least 2 characters!'] 
+      {
+        data: { name: '', gender: 'Male', birthdate: '1990-01-01' },
+        expectedErrors: ['The name must be at least 2 characters!'],
       },
-      { 
-        data: { name: 'Test Name', gender: '', birthdate: '1990-01-01' }, 
-        expectedErrors: ['The gender is required!'] 
+      {
+        data: { name: 'Test Name', gender: '', birthdate: '1990-01-01' },
+        expectedErrors: ['The gender is required!'],
       },
-      { 
-        data: { name: 'Test Name', gender: 'Male', birthdate: '' }, 
-        expectedErrors: ['The birthdate format must be: YYYY-MM-DD!'] 
+      {
+        data: { name: 'Test Name', gender: 'Male', birthdate: '' },
+        expectedErrors: ['The birthdate format must be: YYYY-MM-DD!'],
       },
     ];
 
@@ -85,20 +92,43 @@ describe('Edit Profile Business Flow', () => {
         .send(testCase.data);
 
       expect(response.status).toBe(400);
-      expect(response.body.errors).toEqual(expect.arrayContaining(testCase.expectedErrors));
+      expect(response.body.errors).toEqual(
+        expect.arrayContaining(testCase.expectedErrors),
+      );
     }
 
     // ===== TEST 3: BIRTHDATE VALIDATION =====
     console.log('🧪 Testing birthdate validation...');
-    
+
     const birthdateTestCases = [
-      { birthdate: 'invalid-date', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990/01/01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '01-01-1990', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-13-01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-01-32', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-00-01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-01-00', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+      {
+        birthdate: 'invalid-date',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990/01/01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '01-01-1990',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-13-01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-01-32',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-00-01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-01-00',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
     ];
 
     for (const testCase of birthdateTestCases) {
@@ -108,7 +138,7 @@ describe('Edit Profile Business Flow', () => {
         .send({
           name: 'Test Name',
           gender: 'Male',
-          birthdate: testCase.birthdate
+          birthdate: testCase.birthdate,
         });
 
       expect(response.status).toBe(400);
@@ -117,15 +147,36 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 4: GENDER VALIDATION =====
     console.log('🧪 Testing gender validation...');
-    
+
     const genderTestCases = [
-      { gender: 'Invalid', expectedError: 'Gender must be either \'Male\' or \'Female\'!' },
-      { gender: 'male', expectedError: 'Gender must be either \'Male\' or \'Female\'!' },
-      { gender: 'female', expectedError: 'Gender must be either \'Male\' or \'Female\'!' },
-      { gender: 'M', expectedError: 'Gender must be either \'Male\' or \'Female\'!' },
-      { gender: 'F', expectedError: 'Gender must be either \'Male\' or \'Female\'!' },
-      { gender: '1', expectedError: 'Gender must be either \'Male\' or \'Female\'!' },
-      { gender: '0', expectedError: 'Gender must be either \'Male\' or \'Female\'!' },
+      {
+        gender: 'Invalid',
+        expectedError: "Gender must be either 'Male' or 'Female'!",
+      },
+      {
+        gender: 'male',
+        expectedError: "Gender must be either 'Male' or 'Female'!",
+      },
+      {
+        gender: 'female',
+        expectedError: "Gender must be either 'Male' or 'Female'!",
+      },
+      {
+        gender: 'M',
+        expectedError: "Gender must be either 'Male' or 'Female'!",
+      },
+      {
+        gender: 'F',
+        expectedError: "Gender must be either 'Male' or 'Female'!",
+      },
+      {
+        gender: '1',
+        expectedError: "Gender must be either 'Male' or 'Female'!",
+      },
+      {
+        gender: '0',
+        expectedError: "Gender must be either 'Male' or 'Female'!",
+      },
     ];
 
     for (const testCase of genderTestCases) {
@@ -135,7 +186,7 @@ describe('Edit Profile Business Flow', () => {
         .send({
           name: 'Test Name',
           gender: testCase.gender,
-          birthdate: '1990-01-01'
+          birthdate: '1990-01-01',
         });
 
       expect(response.status).toBe(400);
@@ -144,11 +195,14 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 5: NAME LENGTH VALIDATION =====
     console.log('🧪 Testing name length validation...');
-    
+
     const nameLengthTestCases = [
       { name: '', expectedError: 'The name must be at least 2 characters!' },
       { name: 'A', expectedError: 'The name must be at least 2 characters!' },
-      { name: 'a'.repeat(101), expectedError: 'The name cannot exceed 100 characters!' },
+      {
+        name: 'a'.repeat(101),
+        expectedError: 'The name cannot exceed 100 characters!',
+      },
     ];
 
     for (const testCase of nameLengthTestCases) {
@@ -158,7 +212,7 @@ describe('Edit Profile Business Flow', () => {
         .send({
           name: testCase.name,
           gender: 'Male',
-          birthdate: '1990-01-01'
+          birthdate: '1990-01-01',
         });
 
       expect(response.status).toBe(400);
@@ -167,13 +221,13 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 6: EMAIL PROTECTION =====
     console.log('🧪 Testing email protection...');
-    
+
     const originalEmail = process.env.EMAIL_ADMIN;
     const emailProtectionData = {
       name: 'Updated Admin Name',
       gender: 'Male',
       birthdate: '1990-01-01',
-      email: 'newemail@example.com'
+      email: 'newemail@example.com',
     };
 
     const emailResponse = await supertest(web)
@@ -187,7 +241,7 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 7: VALID GENDER VALUES =====
     console.log('🧪 Testing valid gender values...');
-    
+
     const validGenderTestCases = [
       { gender: 'Male', name: 'Male User' },
       { gender: 'Female', name: 'Female User' },
@@ -200,7 +254,7 @@ describe('Edit Profile Business Flow', () => {
         .send({
           name: testCase.name,
           gender: testCase.gender,
-          birthdate: '1990-01-01'
+          birthdate: '1990-01-01',
         });
 
       expect(response.status).toBe(200);
@@ -210,7 +264,7 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 8: VALID BIRTHDATE FORMATS =====
     console.log('🧪 Testing valid birthdate formats...');
-    
+
     const validBirthdateTestCases = [
       { birthdate: '1990-01-01', name: 'User1990' },
       { birthdate: '2000-12-31', name: 'User2000' },
@@ -225,7 +279,7 @@ describe('Edit Profile Business Flow', () => {
         .send({
           name: testCase.name,
           gender: 'Male',
-          birthdate: testCase.birthdate
+          birthdate: testCase.birthdate,
         });
 
       expect(response.status).toBe(200);
@@ -235,7 +289,7 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 9: SPECIAL CHARACTERS IN NAME =====
     console.log('🧪 Testing special characters in name...');
-    
+
     const specialCharTestCases = [
       { name: 'John-Doe', gender: 'Male' },
       { name: "O'Connor", gender: 'Male' },
@@ -249,7 +303,7 @@ describe('Edit Profile Business Flow', () => {
         .send({
           name: testCase.name,
           gender: testCase.gender,
-          birthdate: '1990-01-01'
+          birthdate: '1990-01-01',
         });
 
       expect(response.status).toBe(200);
@@ -259,22 +313,24 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 10: CONCURRENT REQUESTS =====
     console.log('🧪 Testing concurrent requests...');
-    
+
     const concurrentUpdateData = {
       name: 'Concurrent Test User',
       gender: 'Male',
-      birthdate: '1990-01-01'
+      birthdate: '1990-01-01',
     };
 
-    const promises = Array(3).fill(null).map((_, index) =>
-      supertest(web)
-        .patch('/api/edit-profile')
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          ...concurrentUpdateData,
-          name: `ConcurrentUser${index + 1}`
-        })
-    );
+    const promises = Array(3)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .patch('/api/edit-profile')
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            ...concurrentUpdateData,
+            name: `ConcurrentUser${index + 1}`,
+          }),
+      );
 
     const concurrentResponses = await Promise.all(promises);
 
@@ -286,14 +342,14 @@ describe('Edit Profile Business Flow', () => {
 
     // ===== TEST 11: EXTRA FIELDS IGNORED =====
     console.log('🧪 Testing extra fields ignored...');
-    
+
     const extraFieldsData = {
       name: 'Test User',
       gender: 'Male',
       birthdate: '1990-01-01',
       extra_field: 'should be ignored',
       another_field: 123,
-      nested_field: { key: 'value' }
+      nested_field: { key: 'value' },
     };
 
     const extraFieldsResponse = await supertest(web)
@@ -304,18 +360,20 @@ describe('Edit Profile Business Flow', () => {
     expect(extraFieldsResponse.status).toBe(200);
     expect(extraFieldsResponse.body.data.name).toBe(extraFieldsData.name);
     expect(extraFieldsResponse.body.data.gender).toBe(extraFieldsData.gender);
-    expect(extraFieldsResponse.body.data.birthdate).toContain(extraFieldsData.birthdate);
+    expect(extraFieldsResponse.body.data.birthdate).toContain(
+      extraFieldsData.birthdate,
+    );
     expect(extraFieldsResponse.body.data.extra_field).toBeUndefined();
     expect(extraFieldsResponse.body.data.another_field).toBeUndefined();
     expect(extraFieldsResponse.body.data.nested_field).toBeUndefined();
 
     // ===== TEST 12: QUERY PARAMETERS IGNORED =====
     console.log('🧪 Testing query parameters ignored...');
-    
+
     const queryParamData = {
       name: 'Test User',
       gender: 'Male',
-      birthdate: '1990-01-01'
+      birthdate: '1990-01-01',
     };
 
     const queryParamResponse = await supertest(web)

@@ -34,21 +34,21 @@ describe('Permission Auth Business Flow', () => {
     jest.setTimeout(30000);
     // ===== TEST 1: AUTHENTICATION =====
     console.log('🧪 Testing permission authentication...');
-    
+
     // Should return 401 when accessing permission without authentication
     const noAuthResponse = await supertest(web).get(baseUrlTest);
     expect(noAuthResponse.status).toBe(401);
 
     // ===== TEST 2: VALIDATION =====
     console.log('🧪 Testing permission validation...');
-    
+
     // Should return 400 when key_menu parameter is missing
     const missingParamResponse = await supertest(web)
       .get(baseUrlTest)
       .set('Cookie', cookieHeader ?? '');
     expect(missingParamResponse.status).toBe(400);
     expect(missingParamResponse.body.errors).toEqual(
-      expect.arrayContaining(['The key menu is required!'])
+      expect.arrayContaining(['The key menu is required!']),
     );
 
     // Should return 400 when key_menu parameter is empty
@@ -57,12 +57,12 @@ describe('Permission Auth Business Flow', () => {
       .set('Cookie', cookieHeader ?? '');
     expect(emptyParamResponse.status).toBe(400);
     expect(emptyParamResponse.body.errors).toEqual(
-      expect.arrayContaining(['The key menu is required!'])
+      expect.arrayContaining(['The key menu is required!']),
     );
 
     // ===== TEST 3: NONEXISTENT MENU =====
     console.log('🧪 Testing nonexistent menu permissions...');
-    
+
     const nonexistentResponse = await supertest(web)
       .get(`${baseUrlTest}?key_menu=nonexistent_menu`)
       .set('Cookie', cookieHeader ?? '');
@@ -79,7 +79,7 @@ describe('Permission Auth Business Flow', () => {
 
     // ===== TEST 4: EXISTING MENU PERMISSIONS =====
     console.log('🧪 Testing existing menu permissions...');
-    
+
     const userMenuResponse = await supertest(web)
       .get(`${baseUrlTest}?key_menu=user`)
       .set('Cookie', cookieHeader ?? '');
@@ -90,7 +90,7 @@ describe('Permission Auth Business Flow', () => {
 
     // ===== TEST 5: MULTIPLE MENU KEYS =====
     console.log('🧪 Testing multiple menu keys...');
-    
+
     const testCases = [
       { key_menu: 'user', expectedAccess: true },
       { key_menu: 'role', expectedAccess: true },
@@ -102,14 +102,14 @@ describe('Permission Auth Business Flow', () => {
       const response = await supertest(web)
         .get(`${baseUrlTest}?key_menu=${testCase.key_menu}`)
         .set('Cookie', cookieHeader ?? '');
-      
+
       expect(response.status).toBe(200);
       expect(response.body.data.access).toBe(testCase.expectedAccess);
     }
 
     // ===== TEST 6: SUCCESS MESSAGE =====
     console.log('🧪 Testing success message...');
-    
+
     const successResponse = await supertest(web)
       .get(`${baseUrlTest}?key_menu=user`)
       .set('Cookie', cookieHeader ?? '');

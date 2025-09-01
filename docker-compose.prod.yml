@@ -1,0 +1,9 @@
+services:
+  project_be_app_management:
+    restart: always
+
+  db:
+    restart: always
+
+  be_app_management_nginx:
+    restart: always

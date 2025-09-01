@@ -27,7 +27,7 @@ export class RoleMenuController {
     try {
       const data = await RoleMenuService.store(
         parseInt(req.params.role_id),
-        req.body
+        req.body,
       );
 
       res.status(200).json({

@@ -1,4 +1,8 @@
-import { IMenuWithPerm, IRequestRoleMenu, IRoleMenuUpsertData } from '../model/role-menu-model';
+import {
+  IMenuWithPerm,
+  IRequestRoleMenu,
+  IRoleMenuUpsertData,
+} from '../model/role-menu-model';
 import { roleMenuRepository } from '../repository';
 
 export class RoleMenuService {

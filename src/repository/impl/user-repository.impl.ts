@@ -1,10 +1,20 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prismaClient } from '../../config/database';
 import { IUserRepository } from '../contract/user-repository.contract';
-import { IUserObject, IUserWithRole, IUserCreateData, IUserUpdateData } from '../../model/user-model';
+import {
+  IUserObject,
+  IUserWithRole,
+  IUserCreateData,
+  IUserUpdateData,
+} from '../../model/user-model';
 
 export class UserRepository implements IUserRepository {
-  async findMany(where: Prisma.UserWhereInput, orderBy: Prisma.UserOrderByWithRelationInput[], skip: number, take: number): Promise<IUserObject[]> {
+  async findMany(
+    where: Prisma.UserWhereInput,
+    orderBy: Prisma.UserOrderByWithRelationInput[],
+    skip: number,
+    take: number,
+  ): Promise<IUserObject[]> {
     return await prismaClient.user.findMany({
       where,
       orderBy,
@@ -15,20 +25,27 @@ export class UserRepository implements IUserRepository {
 
   async count(where: Prisma.UserWhereInput): Promise<number> {
     return await prismaClient.user.count({
-      where
+      where,
     });
   }
 
-  async findFirstByEmail(email: string, excludeId?: number | null): Promise<IUserObject | null> {
+  async findFirstByEmail(
+    email: string,
+    excludeId?: number | null,
+  ): Promise<IUserObject | null> {
     return await prismaClient.user.findFirst({
       where: {
-        email: email,
-        ...(excludeId !== null && excludeId !== undefined && { id: { not: excludeId } }),
+        email,
+        ...(excludeId !== null &&
+          excludeId !== undefined && { id: { not: excludeId } }),
       },
     });
   }
 
-  async findUniqueWithRole(prisma: PrismaClient | Prisma.TransactionClient, id: number): Promise<IUserWithRole | null> {
+  async findUniqueWithRole(
+    prisma: PrismaClient | Prisma.TransactionClient,
+    id: number,
+  ): Promise<IUserWithRole | null> {
     return await prisma.user.findUnique({
       select: {
         id: true,
@@ -73,12 +90,16 @@ export class UserRepository implements IUserRepository {
     });
   }
 
-  async updateActiveStatus(id: number, status: string, updatedBy: number): Promise<IUserObject> {
+  async updateActiveStatus(
+    id: number,
+    status: string,
+    updatedBy: number,
+  ): Promise<IUserObject> {
     return await prismaClient.user.update({
       where: { id },
       data: {
         active: status,
-        updated_by: updatedBy
+        updated_by: updatedBy,
       },
     });
   }

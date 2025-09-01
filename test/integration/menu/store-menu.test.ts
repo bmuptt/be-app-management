@@ -35,11 +35,11 @@ describe('Store Menu Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL MENU CREATION =====
     console.log('🧪 Testing successful menu creation...');
-    
+
     const menuData = {
       key_menu: 'test-menu',
       name: 'Test Menu',
-      url: '/test-menu'
+      url: '/test-menu',
     };
 
     const response = await supertest(web)
@@ -60,14 +60,14 @@ describe('Store Menu Business Flow', () => {
 
     // ===== TEST 2: SUCCESSFUL SUBMENU CREATION =====
     console.log('🧪 Testing successful submenu creation...');
-    
+
     // First create a parent menu
     const parentResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-menu',
-        name: 'Parent Menu'
+        name: 'Parent Menu',
       });
 
     expect(parentResponse.status).toBe(200);
@@ -78,7 +78,7 @@ describe('Store Menu Business Flow', () => {
       key_menu: 'sub-menu',
       name: 'Sub Menu',
       url: '/parent/sub-menu',
-      menu_id: parentId
+      menu_id: parentId,
     };
 
     const submenuResponse = await supertest(web)
@@ -95,33 +95,35 @@ describe('Store Menu Business Flow', () => {
 
     // ===== TEST 3: DUPLICATE KEY_MENU ERROR =====
     console.log('🧪 Testing duplicate key_menu error...');
-    
+
     const duplicateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu',
-        name: 'Duplicate Menu'
+        name: 'Duplicate Menu',
       });
 
     expect(duplicateResponse.status).toBe(400);
-    expect(duplicateResponse.body.errors).toContain('The key menu cannot be the same!');
+    expect(duplicateResponse.body.errors).toContain(
+      'The key menu cannot be the same!',
+    );
 
     // ===== TEST 4: VALIDATION ERRORS FOR MISSING REQUIRED FIELDS =====
     console.log('🧪 Testing validation errors for missing required fields...');
-    
+
     const testCases = [
-      { 
-        data: {}, 
-        expectedErrors: ['The key menu is required!', 'The name is required!'] 
+      {
+        data: {},
+        expectedErrors: ['The key menu is required!', 'The name is required!'],
       },
-      { 
-        data: { key_menu: 'test' }, 
-        expectedErrors: ['The name is required!'] 
+      {
+        data: { key_menu: 'test' },
+        expectedErrors: ['The name is required!'],
       },
-      { 
-        data: { name: 'Test Menu' }, 
-        expectedErrors: ['The key menu is required!'] 
+      {
+        data: { name: 'Test Menu' },
+        expectedErrors: ['The key menu is required!'],
       },
     ];
 
@@ -132,29 +134,33 @@ describe('Store Menu Business Flow', () => {
         .send(testCase.data);
 
       expect(validationResponse.status).toBe(400);
-      expect(validationResponse.body.errors).toEqual(expect.arrayContaining(testCase.expectedErrors));
+      expect(validationResponse.body.errors).toEqual(
+        expect.arrayContaining(testCase.expectedErrors),
+      );
     }
 
     // ===== TEST 5: VALIDATION ERRORS FOR EMPTY FIELDS =====
     console.log('🧪 Testing validation errors for empty fields...');
-    
+
     const emptyKeyMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: '',
-        name: 'Test Menu'
+        name: 'Test Menu',
       });
 
     expect(emptyKeyMenuResponse.status).toBe(400);
-    expect(emptyKeyMenuResponse.body.errors).toContain('The key menu is required!');
+    expect(emptyKeyMenuResponse.body.errors).toContain(
+      'The key menu is required!',
+    );
 
     const emptyNameResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu-2',
-        name: ''
+        name: '',
       });
 
     expect(emptyNameResponse.status).toBe(400);
@@ -162,28 +168,30 @@ describe('Store Menu Business Flow', () => {
 
     // ===== TEST 6: INVALID PARENT MENU ID =====
     console.log('🧪 Testing invalid parent menu ID...');
-    
+
     const invalidParentResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'invalid-parent-menu',
         name: 'Invalid Parent Menu',
-        menu_id: 999999
+        menu_id: 999999,
       });
 
     expect(invalidParentResponse.status).toBe(404);
-    expect(invalidParentResponse.body.errors).toContain('The parent menu is not found!');
+    expect(invalidParentResponse.body.errors).toContain(
+      'The parent menu is not found!',
+    );
 
     // ===== TEST 7: MENU CREATION WITH OPTIONAL FIELDS =====
     console.log('🧪 Testing menu creation with optional fields...');
-    
+
     const optionalFieldsData = {
       key_menu: 'optional-menu',
       name: 'Optional Menu',
       url: '/optional-menu',
       order_number: 5,
-      active: 'Inactive'
+      active: 'Inactive',
     };
 
     const optionalFieldsResponse = await supertest(web)
@@ -192,7 +200,9 @@ describe('Store Menu Business Flow', () => {
       .send(optionalFieldsData);
 
     expect(optionalFieldsResponse.status).toBe(200);
-    expect(optionalFieldsResponse.body.data.key_menu).toBe(optionalFieldsData.key_menu);
+    expect(optionalFieldsResponse.body.data.key_menu).toBe(
+      optionalFieldsData.key_menu,
+    );
     expect(optionalFieldsResponse.body.data.name).toBe(optionalFieldsData.name);
     expect(optionalFieldsResponse.body.data.url).toBe(optionalFieldsData.url);
     // Note: order_number is auto-generated by the API, not from the request
@@ -202,11 +212,11 @@ describe('Store Menu Business Flow', () => {
 
     // ===== TEST 8: SPECIAL CHARACTERS IN FIELDS =====
     console.log('🧪 Testing special characters in fields...');
-    
+
     const specialCharData = {
       key_menu: 'special-menu-123',
       name: 'Special Menu & More',
-      url: '/special/menu?param=value'
+      url: '/special/menu?param=value',
     };
 
     const specialCharResponse = await supertest(web)
@@ -215,22 +225,26 @@ describe('Store Menu Business Flow', () => {
       .send(specialCharData);
 
     expect(specialCharResponse.status).toBe(200);
-    expect(specialCharResponse.body.data.key_menu).toBe(specialCharData.key_menu);
+    expect(specialCharResponse.body.data.key_menu).toBe(
+      specialCharData.key_menu,
+    );
     expect(specialCharResponse.body.data.name).toBe(specialCharData.name);
     expect(specialCharResponse.body.data.url).toBe(specialCharData.url);
 
     // ===== TEST 9: CONCURRENT MENU CREATION =====
     console.log('🧪 Testing concurrent menu creation...');
-    
-    const concurrentPromises = Array(3).fill(null).map((_, index) =>
-      supertest(web)
-        .post(baseUrlTest)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          key_menu: `concurrent-menu-${index + 1}`,
-          name: `Concurrent Menu ${index + 1}`
-        })
-    );
+
+    const concurrentPromises = Array(3)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .post(baseUrlTest)
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            key_menu: `concurrent-menu-${index + 1}`,
+            name: `Concurrent Menu ${index + 1}`,
+          }),
+      );
 
     const concurrentResponses = await Promise.all(concurrentPromises);
 
@@ -242,13 +256,13 @@ describe('Store Menu Business Flow', () => {
 
     // ===== TEST 10: MENU CREATION WITH EXTRA FIELDS =====
     console.log('🧪 Testing menu creation with extra fields...');
-    
+
     const extraFieldsData = {
       key_menu: 'extra-menu',
       name: 'Extra Menu',
       extra_field: 'should be ignored',
       another_field: 123,
-      nested_field: { key: 'value' }
+      nested_field: { key: 'value' },
     };
 
     const extraFieldsResponse = await supertest(web)
@@ -257,7 +271,9 @@ describe('Store Menu Business Flow', () => {
       .send(extraFieldsData);
 
     expect(extraFieldsResponse.status).toBe(200);
-    expect(extraFieldsResponse.body.data.key_menu).toBe(extraFieldsData.key_menu);
+    expect(extraFieldsResponse.body.data.key_menu).toBe(
+      extraFieldsData.key_menu,
+    );
     expect(extraFieldsResponse.body.data.name).toBe(extraFieldsData.name);
     expect(extraFieldsResponse.body.data.extra_field).toBeUndefined();
     expect(extraFieldsResponse.body.data.another_field).toBeUndefined();
@@ -265,14 +281,14 @@ describe('Store Menu Business Flow', () => {
 
     // ===== TEST 11: DEEP NESTED MENU STRUCTURE =====
     console.log('🧪 Testing deep nested menu structure...');
-    
+
     // Create level 1 menu
     const level1Response = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'level1',
-        name: 'Level 1 Menu'
+        name: 'Level 1 Menu',
       });
 
     expect(level1Response.status).toBe(200);
@@ -285,7 +301,7 @@ describe('Store Menu Business Flow', () => {
       .send({
         key_menu: 'level2',
         name: 'Level 2 Menu',
-        menu_id: level1Id
+        menu_id: level1Id,
       });
 
     expect(level2Response.status).toBe(200);
@@ -298,7 +314,7 @@ describe('Store Menu Business Flow', () => {
       .send({
         key_menu: 'level3',
         name: 'Level 3 Menu',
-        menu_id: level2Id
+        menu_id: level2Id,
       });
 
     expect(level3Response.status).toBe(200);

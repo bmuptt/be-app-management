@@ -15,7 +15,7 @@ describe('Menu Structure Business Flow', () => {
   const getAllMenuIds = (menus: any[]): number[] => {
     const ids: number[] = [];
     const traverse = (menuList: any[]) => {
-      menuList.forEach(menu => {
+      menuList.forEach((menu) => {
         ids.push(menu.id);
         if (menu.children && menu.children.length > 0) {
           traverse(menu.children);
@@ -51,19 +51,24 @@ describe('Menu Structure Business Flow', () => {
     // ===== TEST 1: GET INITIAL MENU STRUCTURE =====
     console.log('🧪 Testing get initial menu structure...');
 
-    
     const initialStructureResponse = await supertest(web)
       .get(`${baseUrlTest}/menu/structure`)
       .set('Cookie', cookieHeader ?? '');
 
-    console.log('Initial structure response status:', initialStructureResponse.status);
-    console.log('Initial structure response body:', JSON.stringify(initialStructureResponse.body, null, 2));
+    console.log(
+      'Initial structure response status:',
+      initialStructureResponse.status,
+    );
+    console.log(
+      'Initial structure response body:',
+      JSON.stringify(initialStructureResponse.body, null, 2),
+    );
 
     expect(initialStructureResponse.status).toBe(200);
     expect(initialStructureResponse.body).toHaveProperty('data');
     expect(Array.isArray(initialStructureResponse.body.data)).toBe(true);
     expect(initialStructureResponse.body.data.length).toBeGreaterThan(0);
-    
+
     // Verify basic structure of seeded menus
     const firstMenu = initialStructureResponse.body.data[0];
     expect(firstMenu).toHaveProperty('id');
@@ -74,7 +79,7 @@ describe('Menu Structure Business Flow', () => {
     expect(firstMenu).toHaveProperty('active');
     expect(firstMenu).toHaveProperty('children');
     expect(Array.isArray(firstMenu.children)).toBe(true);
-    
+
     // Verify hierarchical structure
     if (firstMenu.children.length > 0) {
       const firstChild = firstMenu.children[0];
@@ -87,19 +92,19 @@ describe('Menu Structure Business Flow', () => {
       expect(firstChild).toHaveProperty('children');
       expect(Array.isArray(firstChild.children)).toBe(true);
     }
-    
+
     console.log('✅ Initial menu structure verified successfully');
 
     // ===== TEST 2: CREATE NESTED MENU STRUCTURE =====
     console.log('🧪 Testing create nested menu structure...');
-    
+
     // Create parent menu
     const parentResponse = await supertest(web)
       .post(`${baseUrlTest}/menu`)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-parent',
-        name: 'Test Parent Menu'
+        name: 'Test Parent Menu',
       });
 
     expect(parentResponse.status).toBe(200);
@@ -113,7 +118,7 @@ describe('Menu Structure Business Flow', () => {
       .send({
         key_menu: 'test-child',
         name: 'Test Child Menu',
-        menu_id: parentId
+        menu_id: parentId,
       });
 
     expect(childResponse.status).toBe(200);
@@ -127,7 +132,7 @@ describe('Menu Structure Business Flow', () => {
       .send({
         key_menu: 'test-grandchild',
         name: 'Test Grandchild Menu',
-        menu_id: childId
+        menu_id: childId,
       });
 
     expect(grandchildResponse.status).toBe(200);
@@ -136,25 +141,31 @@ describe('Menu Structure Business Flow', () => {
 
     // ===== TEST 3: VERIFY CREATED MENUS IN STRUCTURE =====
     console.log('🧪 Testing verify created menus in structure...');
-    
+
     // Get updated menu structure to verify our created menus exist
     const updatedStructureResponse = await supertest(web)
       .get(`${baseUrlTest}/menu/structure`)
       .set('Cookie', cookieHeader ?? '');
 
-    console.log('Updated structure response status:', updatedStructureResponse.status);
-    console.log('Updated structure response body:', JSON.stringify(updatedStructureResponse.body, null, 2));
+    console.log(
+      'Updated structure response status:',
+      updatedStructureResponse.status,
+    );
+    console.log(
+      'Updated structure response body:',
+      JSON.stringify(updatedStructureResponse.body, null, 2),
+    );
 
     expect(updatedStructureResponse.status).toBe(200);
     expect(updatedStructureResponse.body).toHaveProperty('data');
     expect(Array.isArray(updatedStructureResponse.body.data)).toBe(true);
-    
+
     // Verify that our new menus are in the structure
     const allMenuIds = getAllMenuIds(updatedStructureResponse.body.data);
     expect(allMenuIds).toContain(parentId);
     expect(allMenuIds).toContain(childId);
     expect(allMenuIds).toContain(grandchildId);
-    
+
     console.log('✅ Created menus verified in structure');
     console.log(`✅ Parent menu created with ID: ${parentId}`);
     console.log(`✅ Child menu created with ID: ${childId}`);
@@ -162,25 +173,29 @@ describe('Menu Structure Business Flow', () => {
 
     // ===== TEST 4: UPDATE MENU AND VERIFY STRUCTURE =====
     console.log('🧪 Testing update menu and verify structure...');
-    
+
     const updateResponse = await supertest(web)
       .patch(`${baseUrlTest}/menu/${parentId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-parent-updated',
-        name: 'Test Parent Menu Updated'
+        name: 'Test Parent Menu Updated',
       });
 
     expect(updateResponse.status).toBe(200);
 
     // Verify menu was updated successfully
     console.log('✅ Menu update request completed successfully');
-    console.log(`✅ Parent menu updated with new key_menu: test-parent-updated`);
-    console.log(`✅ Parent menu updated with new name: Test Parent Menu Updated`);
+    console.log(
+      `✅ Parent menu updated with new key_menu: test-parent-updated`,
+    );
+    console.log(
+      `✅ Parent menu updated with new name: Test Parent Menu Updated`,
+    );
 
     // ===== TEST 5: DEACTIVATE MENU AND VERIFY STRUCTURE =====
     console.log('🧪 Testing deactivate menu and verify structure...');
-    
+
     const deactivateResponse = await supertest(web)
       .delete(`${baseUrlTest}/menu/${childId}`)
       .set('Cookie', cookieHeader ?? '');
@@ -193,7 +208,7 @@ describe('Menu Structure Business Flow', () => {
 
     // ===== TEST 6: VERIFY FINAL STRUCTURE =====
     console.log('🧪 Testing verify final structure...');
-    
+
     const finalStructureResponse = await supertest(web)
       .get(`${baseUrlTest}/menu/structure`)
       .set('Cookie', cookieHeader ?? '');
@@ -213,14 +228,14 @@ describe('Menu Structure Business Flow', () => {
         expect(menu).toHaveProperty('active');
         expect(menu).toHaveProperty('children');
         expect(Array.isArray(menu.children)).toBe(true);
-        
+
         // Recursively verify children
         if (menu.children.length > 0) {
           verifyMenuStructure(menu.children);
         }
       });
     };
-    
+
     verifyMenuStructure(finalStructureResponse.body.data);
 
     console.log('✅ Final menu structure verified successfully');

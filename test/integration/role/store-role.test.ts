@@ -34,12 +34,12 @@ describe('Store Role Business Flow', () => {
     jest.setTimeout(30000);
     // ===== TEST 1: SUCCESSFUL ROLE CREATION =====
     console.log('🧪 Testing successful role creation...');
-    
+
     const response = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Test Role'
+        name: 'Test Role',
       });
 
     expect(response.status).toBe(200);
@@ -51,21 +51,23 @@ describe('Store Role Business Flow', () => {
 
     // ===== TEST 2: DUPLICATE ROLE NAME =====
     console.log('🧪 Testing duplicate role name...');
-    
+
     // Try to create another role with the same name
     const duplicateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Test Role'
+        name: 'Test Role',
       });
 
     expect(duplicateResponse.status).toBe(400);
-    expect(duplicateResponse.body.errors).toContain('The name cannot be the same!');
+    expect(duplicateResponse.body.errors).toContain(
+      'The name cannot be the same!',
+    );
 
     // ===== TEST 3: VALIDATION ERRORS =====
     console.log('🧪 Testing validation errors...');
-    
+
     // Missing name field
     const missingNameResponse = await supertest(web)
       .post(baseUrlTest)
@@ -80,7 +82,7 @@ describe('Store Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: ''
+        name: '',
       });
 
     expect(emptyNameResponse.status).toBe(400);
@@ -88,13 +90,13 @@ describe('Store Role Business Flow', () => {
 
     // ===== TEST 4: EDGE CASES =====
     console.log('🧪 Testing edge cases...');
-    
+
     // Whitespace-only name
     const whitespaceResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: '   '
+        name: '   ',
       });
 
     expect(whitespaceResponse.status).toBe(200);
@@ -106,7 +108,7 @@ describe('Store Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: maxValidName
+        name: maxValidName,
       });
 
     expect(maxValidResponse.status).toBe(200);
@@ -118,7 +120,7 @@ describe('Store Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: tooLongName
+        name: tooLongName,
       });
 
     expect(tooLongResponse.status).toBe(500);
@@ -126,14 +128,14 @@ describe('Store Role Business Flow', () => {
 
     // ===== TEST 5: SPECIAL CHARACTERS =====
     console.log('🧪 Testing special characters...');
-    
+
     // Special characters in role name
     const specialName = 'Role with @#$%^&*()_+-=[]{}|;:,.<>?';
     const specialCharResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: specialName
+        name: specialName,
       });
 
     expect(specialCharResponse.status).toBe(200);
@@ -145,7 +147,7 @@ describe('Store Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: unicodeName
+        name: unicodeName,
       });
 
     expect(unicodeResponse.status).toBe(200);
@@ -153,15 +155,15 @@ describe('Store Role Business Flow', () => {
 
     // ===== TEST 6: MULTIPLE ROLE CREATION =====
     console.log('🧪 Testing multiple role creation...');
-    
+
     const roles = ['Role 1', 'Role 2', 'Role 3'];
-    
+
     for (const roleName of roles) {
       const multiResponse = await supertest(web)
         .post(baseUrlTest)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          name: roleName
+          name: roleName,
         });
 
       expect(multiResponse.status).toBe(200);
@@ -170,13 +172,13 @@ describe('Store Role Business Flow', () => {
 
     // ===== TEST 7: CASE-SENSITIVE DUPLICATE DETECTION =====
     console.log('🧪 Testing case-sensitive duplicate detection...');
-    
+
     // Create a role with different case
     const caseResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'test role'
+        name: 'test role',
       });
 
     expect(caseResponse.status).toBe(200);
@@ -184,12 +186,12 @@ describe('Store Role Business Flow', () => {
 
     // ===== TEST 8: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     const structureResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Test Role Structure'
+        name: 'Test Role Structure',
       });
 
     expect(structureResponse.status).toBe(200);

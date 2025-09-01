@@ -18,7 +18,8 @@ const baseSchemaSort = z.object({
     .array(
       z.object({
         id: z.number({ message: `The id is required!` }),
-      }), { message: `The list menu must contain more equal to than 1 item!` }
+      }),
+      { message: `The list menu must contain more equal to than 1 item!` },
     )
     .min(1, 'The list menu must contain more equal to than 1 item!'),
 });
@@ -26,7 +27,7 @@ const baseSchemaSort = z.object({
 export const validateStoreMenu = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     baseSchema.parse(req.body);
@@ -64,7 +65,7 @@ export const validateStoreMenu = async (
 export const validateUpdateMenu = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     baseSchema.parse(req.body);
@@ -102,7 +103,7 @@ export const validateUpdateMenu = async (
 export const validateSortMenu = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     baseSchemaSort.parse(req.body);
@@ -113,18 +114,22 @@ export const validateSortMenu = async (
       menu_id = parseInt(req.params.id);
     }
 
-    const checks = (req.body.list_menu as { id: number }[]).map(async ({ id }) => {
-      const dataExist = await prismaClient.menu.findFirst({
-        where: {
-          id,
-          menu_id,
-        },
-      });
+    const checks = (req.body.list_menu as { id: number }[]).map(
+      async ({ id }) => {
+        const dataExist = await prismaClient.menu.findFirst({
+          where: {
+            id,
+            menu_id,
+          },
+        });
 
-      if (!dataExist) {
-        throw new ResponseError(404, [`The menu with ID ${id} does not exist!`]);
-      }
-    });
+        if (!dataExist) {
+          throw new ResponseError(404, [
+            `The menu with ID ${id} does not exist!`,
+          ]);
+        }
+      },
+    );
 
     await Promise.all(checks);
 
@@ -137,7 +142,7 @@ export const validateSortMenu = async (
 export const validateChangeParent = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const menuId = parseInt(req.params.id);
@@ -153,24 +158,28 @@ export const validateChangeParent = async (
     if (req.body.menu_id) {
       const parentMenuId = parseInt(req.body.menu_id);
       if (isNaN(parentMenuId)) {
-        return next(new ResponseError(404, ['The parent menu does not exist!']));
+        return next(
+          new ResponseError(404, ['The parent menu does not exist!']),
+        );
       }
 
       const dataParent = await MenuService.detail(parentMenuId);
 
       if (!dataParent)
-        return next(new ResponseError(404, ['The parent menu does not exist!']));
+        return next(
+          new ResponseError(404, ['The parent menu does not exist!']),
+        );
     }
     next();
   } catch (e) {
     next(e);
   }
-}
+};
 
 export const validateDeleteMenu = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const dataExist = await MenuService.detail(parseInt(req.params.id));
@@ -181,4 +190,4 @@ export const validateDeleteMenu = async (
   } catch (e) {
     next(e);
   }
-}
+};

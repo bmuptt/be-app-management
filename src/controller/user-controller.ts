@@ -14,7 +14,7 @@ export class UserController {
 
       res.status(200).json({
         ...data,
-        page: parseInt(req.query.page as string) || 1
+        page: parseInt(req.query.page as string) || 1,
       });
     } catch (e) {
       next(e);
@@ -23,14 +23,17 @@ export class UserController {
 
   static async detail(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await UserService.detail(prismaClient, parseInt(req.params.id))
+      const data = await UserService.detail(
+        prismaClient,
+        parseInt(req.params.id),
+      );
 
       if (!data) {
         return next(new ResponseError(404, ['The user does not exist!']));
       }
-      
+
       res.status(200).json({
-        data
+        data,
       });
     } catch (e) {
       next(e);
@@ -47,7 +50,7 @@ export class UserController {
 
       res.status(200).json({
         message: 'Success to add data user.',
-        data
+        data,
       });
     } catch (e) {
       next(e);
@@ -60,11 +63,15 @@ export class UserController {
         return next(new ResponseError(401, ['Unauthorized!']));
       }
 
-      const data = await UserService.update(parseInt(req.params.id), req.body, req.user);
+      const data = await UserService.update(
+        parseInt(req.params.id),
+        req.body,
+        req.user,
+      );
 
       res.status(200).json({
         message: 'Success to edit data user.',
-        data
+        data,
       });
     } catch (e) {
       next(e);
@@ -76,7 +83,7 @@ export class UserController {
       const data = await UserService.resetPassword(parseInt(req.params.id));
       res.status(200).json({
         message: 'Success to reset password user.',
-        data
+        data,
       });
     } catch (e) {
       next(e);
@@ -88,7 +95,7 @@ export class UserController {
       const data = await UserService.takeOut(parseInt(req.params.id));
       res.status(200).json({
         message: 'Success to reset password user.',
-        data
+        data,
       });
     } catch (e) {
       next(e);

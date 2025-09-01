@@ -35,7 +35,7 @@ describe('Detail User Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL USER DETAIL BY ID =====
     console.log('🧪 Testing successful user detail by ID...');
-    
+
     const response = await supertest(web)
       .get(`${baseUrlTest}/1`)
       .set('Cookie', cookieHeader ?? '');
@@ -57,17 +57,19 @@ describe('Detail User Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT USER ID =====
     console.log('🧪 Testing non-existent user ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .get(`${baseUrlTest}/999`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain('The user does not exist!');
+    expect(nonExistentResponse.body.errors).toContain(
+      'The user does not exist!',
+    );
 
     // ===== TEST 3: INVALID USER ID FORMAT =====
     console.log('🧪 Testing invalid user ID format...');
-    
+
     const invalidFormatResponse = await supertest(web)
       .get(`${baseUrlTest}/invalid`)
       .set('Cookie', cookieHeader ?? '');
@@ -77,7 +79,7 @@ describe('Detail User Business Flow', () => {
 
     // ===== TEST 4: INCLUDE ROLE INFORMATION =====
     console.log('🧪 Testing include role information...');
-    
+
     const roleResponse = await supertest(web)
       .get(`${baseUrlTest}/1`)
       .set('Cookie', cookieHeader ?? '');
@@ -90,7 +92,7 @@ describe('Detail User Business Flow', () => {
 
     // ===== TEST 5: ZERO USER ID =====
     console.log('🧪 Testing zero user ID...');
-    
+
     const zeroResponse = await supertest(web)
       .get(`${baseUrlTest}/0`)
       .set('Cookie', cookieHeader ?? '');
@@ -100,7 +102,7 @@ describe('Detail User Business Flow', () => {
 
     // ===== TEST 6: NEGATIVE USER ID =====
     console.log('🧪 Testing negative user ID...');
-    
+
     const negativeResponse = await supertest(web)
       .get(`${baseUrlTest}/-1`)
       .set('Cookie', cookieHeader ?? '');
@@ -110,7 +112,7 @@ describe('Detail User Business Flow', () => {
 
     // ===== TEST 7: VERY LARGE USER ID =====
     console.log('🧪 Testing very large user ID...');
-    
+
     const largeResponse = await supertest(web)
       .get(`${baseUrlTest}/999999999`)
       .set('Cookie', cookieHeader ?? '');
@@ -120,7 +122,7 @@ describe('Detail User Business Flow', () => {
 
     // ===== TEST 8: CORRECT USER DATA FOR ADMIN USER =====
     console.log('🧪 Testing correct user data for admin user...');
-    
+
     const adminResponse = await supertest(web)
       .get(`${baseUrlTest}/1`)
       .set('Cookie', cookieHeader ?? '');
@@ -128,7 +130,9 @@ describe('Detail User Business Flow', () => {
     expect(adminResponse.status).toBe(200);
     expect(adminResponse.body.data).toBeDefined();
     expect(adminResponse.body.data.id).toBe(1);
-    expect(adminResponse.body.data.email).toBe(process.env.EMAIL_ADMIN || 'admin@gmail.com');
+    expect(adminResponse.body.data.email).toBe(
+      process.env.EMAIL_ADMIN || 'admin@gmail.com',
+    );
     expect(adminResponse.body.data.name).toBe('Admin');
 
     console.log('✅ All detail user flow tests completed successfully');

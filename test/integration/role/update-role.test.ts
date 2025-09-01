@@ -32,16 +32,16 @@ describe('Update Role Business Flow', () => {
   it('Should handle complete update role flow including validation, edge cases, and response structure', async () => {
     // Increase timeout for this comprehensive test
     jest.setTimeout(30000);
-    
+
     // ===== TEST 1: SUCCESSFUL ROLE UPDATE =====
     console.log('🧪 Testing successful role update...');
-    
+
     // First create a role
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Original Role Name'
+        name: 'Original Role Name',
       });
 
     expect(createResponse.status).toBe(200);
@@ -52,7 +52,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${roleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Updated Role Name'
+        name: 'Updated Role Name',
       });
 
     expect(response.status).toBe(200);
@@ -64,13 +64,13 @@ describe('Update Role Business Flow', () => {
 
     // ===== TEST 2: DUPLICATE ROLE NAME DURING UPDATE =====
     console.log('🧪 Testing duplicate role name during update...');
-    
+
     // Create first role
     const createResponse1 = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'First Role'
+        name: 'First Role',
       });
 
     expect(createResponse1.status).toBe(200);
@@ -81,7 +81,7 @@ describe('Update Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Second Role'
+        name: 'Second Role',
       });
 
     expect(createResponse2.status).toBe(200);
@@ -92,34 +92,38 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${roleId2}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'First Role'
+        name: 'First Role',
       });
 
     expect(duplicateResponse.status).toBe(400);
-    expect(duplicateResponse.body.errors).toContain('The name cannot be the same!');
+    expect(duplicateResponse.body.errors).toContain(
+      'The name cannot be the same!',
+    );
 
     // ===== TEST 3: NON-EXISTENT ROLE ID =====
     console.log('🧪 Testing non-existent role ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .patch(`${baseUrlTest}/999999`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Updated Name'
+        name: 'Updated Name',
       });
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain('The role does not exist!');
+    expect(nonExistentResponse.body.errors).toContain(
+      'The role does not exist!',
+    );
 
     // ===== TEST 4: VALIDATION ERRORS =====
     console.log('🧪 Testing validation errors...');
-    
+
     // Create a role for validation tests
     const validationCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Test Role'
+        name: 'Test Role',
       });
 
     expect(validationCreateResponse.status).toBe(200);
@@ -139,7 +143,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${validationRoleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: ''
+        name: '',
       });
 
     expect(emptyNameResponse.status).toBe(400);
@@ -147,13 +151,13 @@ describe('Update Role Business Flow', () => {
 
     // ===== TEST 5: EDGE CASES =====
     console.log('🧪 Testing edge cases...');
-    
+
     // Whitespace-only name
     const whitespaceResponse = await supertest(web)
       .patch(`${baseUrlTest}/${validationRoleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: '   '
+        name: '   ',
       });
 
     expect(whitespaceResponse.status).toBe(200);
@@ -165,7 +169,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${validationRoleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: maxValidName
+        name: maxValidName,
       });
 
     expect(maxValidResponse.status).toBe(200);
@@ -177,7 +181,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${validationRoleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: tooLongName
+        name: tooLongName,
       });
 
     expect(tooLongResponse.status).toBe(500);
@@ -185,14 +189,14 @@ describe('Update Role Business Flow', () => {
 
     // ===== TEST 6: SPECIAL CHARACTERS =====
     console.log('🧪 Testing special characters...');
-    
+
     // Special characters in role name
     const specialName = 'Role with @#$%^&*()_+-=[]{}|;:,.<>?';
     const specialCharResponse = await supertest(web)
       .patch(`${baseUrlTest}/${validationRoleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: specialName
+        name: specialName,
       });
 
     expect(specialCharResponse.status).toBe(200);
@@ -204,7 +208,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${validationRoleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: unicodeName
+        name: unicodeName,
       });
 
     expect(unicodeResponse.status).toBe(200);
@@ -212,12 +216,12 @@ describe('Update Role Business Flow', () => {
 
     // ===== TEST 7: INVALID ROLE ID FORMAT =====
     console.log('🧪 Testing invalid role ID format...');
-    
+
     const invalidFormatResponse = await supertest(web)
       .patch(`${baseUrlTest}/invalid`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Updated Name'
+        name: 'Updated Name',
       });
 
     expect(invalidFormatResponse.status).toBe(500);
@@ -229,7 +233,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/-1`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Updated Name'
+        name: 'Updated Name',
       });
 
     expect(negativeResponse.status).toBe(404);
@@ -240,7 +244,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/0`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Updated Name'
+        name: 'Updated Name',
       });
 
     expect(zeroResponse.status).toBe(404);
@@ -248,13 +252,13 @@ describe('Update Role Business Flow', () => {
 
     // ===== TEST 8: CASE-SENSITIVE DUPLICATE DETECTION =====
     console.log('🧪 Testing case-sensitive duplicate detection...');
-    
+
     // Create first role for case test
     const caseCreateResponse1 = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Test Role'
+        name: 'Test Role',
       });
 
     expect(caseCreateResponse1.status).toBe(200);
@@ -265,7 +269,7 @@ describe('Update Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Another Role'
+        name: 'Another Role',
       });
 
     expect(caseCreateResponse2.status).toBe(200);
@@ -276,7 +280,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${caseRoleId2}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'test role'
+        name: 'test role',
       });
 
     expect(caseResponse.status).toBe(200);
@@ -284,13 +288,13 @@ describe('Update Role Business Flow', () => {
 
     // ===== TEST 9: MULTIPLE UPDATES ON SAME ROLE =====
     console.log('🧪 Testing multiple updates on same role...');
-    
+
     // Create a role for multiple updates
     const multiCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Original Name'
+        name: 'Original Name',
       });
 
     expect(multiCreateResponse.status).toBe(200);
@@ -298,13 +302,13 @@ describe('Update Role Business Flow', () => {
 
     // Update multiple times
     const updates = ['First Update', 'Second Update', 'Final Update'];
-    
+
     for (const updateName of updates) {
       const multiUpdateResponse = await supertest(web)
         .patch(`${baseUrlTest}/${multiRoleId}`)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          name: updateName
+          name: updateName,
         });
 
       expect(multiUpdateResponse.status).toBe(200);
@@ -313,13 +317,13 @@ describe('Update Role Business Flow', () => {
 
     // ===== TEST 10: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     // Create a role for structure test
     const structureCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Structure Test Role'
+        name: 'Structure Test Role',
       });
 
     expect(structureCreateResponse.status).toBe(200);
@@ -330,7 +334,7 @@ describe('Update Role Business Flow', () => {
       .patch(`${baseUrlTest}/${structureRoleId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Updated Role Structure'
+        name: 'Updated Role Structure',
       });
 
     expect(structureResponse.status).toBe(200);

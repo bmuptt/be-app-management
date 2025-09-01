@@ -1,0 +1,9 @@
+services:
+  project_be_app_management:
+    restart: "no"
+
+  db:
+    restart: "no"
+
+  be_app_management_nginx:
+    restart: "no"

@@ -23,12 +23,15 @@ const editProfileSchema = z.object({
     .string({ message: `The name is required!` })
     .min(2, `The name must be at least 2 characters!`)
     .max(100, `The name cannot exceed 100 characters!`)
-    .regex(/^[a-zA-Z0-9\s\-'\.]+$/, `The name can only contain letters, numbers, spaces, hyphens, apostrophes, and dots!`),
+    .regex(
+      /^[a-zA-Z0-9\s\-'\.]+$/,
+      `The name can only contain letters, numbers, spaces, hyphens, apostrophes, and dots!`,
+    ),
   gender: z
     .string({ message: `The gender is required!` })
     .min(1, `The gender is required!`)
     .refine((val) => ['Male', 'Female'].includes(val), {
-      message: `Gender must be either 'Male' or 'Female'!`
+      message: `Gender must be either 'Male' or 'Female'!`,
     }),
   birthdate: z
     .string({ message: `The birthdate is required!` })
@@ -41,14 +44,17 @@ const permissionSchema = z.object({
     .min(1, `The key menu is required!`),
 });
 
-export const generateToken = (user: IUserObject | IUserObjectWithoutPassword) => {
+export const generateToken = (
+  user: IUserObject | IUserObjectWithoutPassword,
+) => {
   // Create a type-safe way to handle both types
-  const userWithoutPassword = 'password' in user 
-    ? (() => {
-        const { password, ...rest } = user;
-        return rest;
-      })()
-    : user;
+  const userWithoutPassword =
+    'password' in user
+      ? (() => {
+          const { password, ...rest } = user;
+          return rest;
+        })()
+      : user;
 
   return jwt.sign(userWithoutPassword, secret, {
     expiresIn: '15m',
@@ -62,7 +68,7 @@ export const generateRefreshToken = (): string => {
 export const verifyToken = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const token = req.cookies.token;
 
@@ -93,7 +99,7 @@ export const verifyToken = async (
 export const validateLogin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     await baseSchema.parse(req.body);
@@ -107,7 +113,7 @@ export const validateLogin = async (
 export const validateEditProfile = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     await editProfileSchema.parse(req.body);
@@ -121,7 +127,7 @@ export const validateEditProfile = async (
 export const validatePermission = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     await permissionSchema.parse(req.query);

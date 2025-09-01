@@ -103,7 +103,7 @@ export class MenuService {
     // Build hierarchical structure
     for (const menu of flatMenus) {
       const menuWithChildren = menuMap.get(menu.id)!;
-      
+
       if (menu.menu_id) {
         const parent = menuMap.get(menu.menu_id);
         if (parent) {
@@ -170,7 +170,7 @@ export class MenuService {
   static async changeParent(
     id: number,
     req: IRequestMenuChangeParent,
-    auth: IUserObject
+    auth: IUserObject,
   ) {
     const menu_id = req.menu_id ?? null;
     const order_number = await this.menuLastByParentId(menu_id);

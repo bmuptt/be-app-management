@@ -33,24 +33,24 @@ describe('Role Menu Store Business Flow', () => {
 
     // ===== TEST 1: CREATE TEST MENU FOR CONFIGURATION =====
     console.log('🧪 Testing create test menu for configuration...');
-    
+
     const createMenuResponse = await supertest(web)
       .post(baseUrlMenuTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu',
-        name: 'Test Menu'
+        name: 'Test Menu',
       });
 
     expect(createMenuResponse.status).toBe(200);
     expect(createMenuResponse.body.data).toHaveProperty('id');
     const menuId = createMenuResponse.body.data.id;
-    
+
     console.log('✅ Test menu created successfully with ID:', menuId);
 
     // ===== TEST 2: STORE BASIC ROLE MENU CONFIGURATION =====
     console.log('🧪 Testing store basic role menu configuration...');
-    
+
     const basicConfigResponse = await supertest(web)
       .post(`${baseUrlTest}/1`)
       .set('Cookie', cookieHeader ?? '')
@@ -63,12 +63,14 @@ describe('Role Menu Store Business Flow', () => {
 
     expect(basicConfigResponse.status).toBe(200);
     expect(basicConfigResponse.body).toHaveProperty('data');
-    
+
     console.log('✅ Basic role menu configuration stored successfully');
 
     // ===== TEST 3: CREATE MULTIPLE MENUS AND STORE MULTIPLE CONFIGURATIONS =====
-    console.log('🧪 Testing create multiple menus and store multiple configurations...');
-    
+    console.log(
+      '🧪 Testing create multiple menus and store multiple configurations...',
+    );
+
     const menuIds: number[] = [menuId]; // Include the first menu
     for (let i = 2; i <= 3; i++) {
       const createMultiMenuResponse = await supertest(web)
@@ -76,7 +78,7 @@ describe('Role Menu Store Business Flow', () => {
         .set('Cookie', cookieHeader ?? '')
         .send({
           key_menu: `test-menu-${i}`,
-          name: `Test Menu ${i}`
+          name: `Test Menu ${i}`,
         });
 
       expect(createMultiMenuResponse.status).toBe(200);
@@ -107,18 +109,18 @@ describe('Role Menu Store Business Flow', () => {
 
     expect(multipleConfigResponse.status).toBe(200);
     expect(multipleConfigResponse.body).toHaveProperty('data');
-    
+
     console.log('✅ Multiple role menu configurations stored successfully');
 
     // ===== TEST 4: TEST DIFFERENT PERMISSION COMBINATIONS =====
     console.log('🧪 Testing different permission combinations...');
-    
+
     const createPermMenuResponse = await supertest(web)
       .post(baseUrlMenuTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu-permissions',
-        name: 'Test Menu Permissions'
+        name: 'Test Menu Permissions',
       });
 
     expect(createPermMenuResponse.status).toBe(200);
@@ -149,18 +151,18 @@ describe('Role Menu Store Business Flow', () => {
       expect(permResponse.status).toBe(200);
       expect(permResponse.body).toHaveProperty('data');
     }
-    
+
     console.log('✅ Different permission combinations tested successfully');
 
     // ===== TEST 5: VERIFY NO DUPLICATE ENTRIES =====
     console.log('🧪 Testing verify no duplicate entries...');
-    
+
     const createDuplicateMenuResponse = await supertest(web)
       .post(baseUrlMenuTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu-duplicate',
-        name: 'Test Menu Duplicate'
+        name: 'Test Menu Duplicate',
       });
 
     expect(createDuplicateMenuResponse.status).toBe(200);
@@ -196,17 +198,17 @@ describe('Role Menu Store Business Flow', () => {
     const roleMenus = await prismaClient.roleMenu.findMany({
       where: {
         role_id: 1,
-        menu_id: duplicateMenuId
-      }
+        menu_id: duplicateMenuId,
+      },
     });
 
     expect(roleMenus.length).toBe(1);
-    
+
     console.log('✅ No duplicate entries verified successfully');
 
     // ===== TEST 6: TEST ERROR HANDLING =====
     console.log('🧪 Testing error handling...');
-    
+
     // Test non-existent role
     const nonExistentRoleResponse = await supertest(web)
       .post(`${baseUrlTest}/999999`)
@@ -220,7 +222,7 @@ describe('Role Menu Store Business Flow', () => {
 
     expect(nonExistentRoleResponse.status).toBe(404);
     expect(nonExistentRoleResponse.body.errors).toEqual(
-      expect.arrayContaining(['Role or Menu not found!'])
+      expect.arrayContaining(['Role or Menu not found!']),
     );
 
     // Test non-existent menu
@@ -236,7 +238,7 @@ describe('Role Menu Store Business Flow', () => {
 
     expect(nonExistentMenuResponse.status).toBe(404);
     expect(nonExistentMenuResponse.body.errors).toEqual(
-      expect.arrayContaining(['Role or Menu not found!'])
+      expect.arrayContaining(['Role or Menu not found!']),
     );
 
     // Test invalid menu data structure
@@ -266,12 +268,12 @@ describe('Role Menu Store Business Flow', () => {
 
     expect(invalidRoleResponse.status).toBe(500);
     expect(invalidRoleResponse.body.errors).toBeDefined();
-    
+
     console.log('✅ Error handling verified successfully');
 
     // ===== TEST 7: TEST EMPTY ARRAY HANDLING =====
     console.log('🧪 Testing empty array handling...');
-    
+
     const emptyArrayResponse = await supertest(web)
       .post(`${baseUrlTest}/1`)
       .set('Cookie', cookieHeader ?? '')
@@ -279,9 +281,8 @@ describe('Role Menu Store Business Flow', () => {
 
     expect(emptyArrayResponse.status).toBe(200);
     expect(emptyArrayResponse.body).toHaveProperty('data');
-    
+
     console.log('✅ Empty array handling verified successfully');
     console.log('🎉 All role menu store flow tests completed successfully!');
   });
-
 });

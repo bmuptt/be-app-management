@@ -35,14 +35,14 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL PARENT CHANGE =====
     console.log('🧪 Testing successful parent change...');
-    
+
     // Create parent menus
     const parent1Response = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-1',
-        name: 'Parent 1'
+        name: 'Parent 1',
       });
 
     expect(parent1Response.status).toBe(200);
@@ -53,7 +53,7 @@ describe('Menu Change Parent Business Flow', () => {
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-2',
-        name: 'Parent 2'
+        name: 'Parent 2',
       });
 
     expect(parent2Response.status).toBe(200);
@@ -66,7 +66,7 @@ describe('Menu Change Parent Business Flow', () => {
       .send({
         key_menu: 'child-menu',
         name: 'Child Menu',
-        menu_id: parent1Id
+        menu_id: parent1Id,
       });
 
     expect(childResponse.status).toBe(200);
@@ -77,21 +77,20 @@ describe('Menu Change Parent Business Flow', () => {
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: parent2Id
+        menu_id: parent2Id,
       });
-
 
     expect(changeParentResponse.status).toBe(200);
     expect(changeParentResponse.body.data.menu_id).toBe(parent2Id);
 
     // ===== TEST 2: CHANGE TO ROOT LEVEL (NULL PARENT) =====
     console.log('🧪 Testing change to root level...');
-    
+
     const rootChangeResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: null
+        menu_id: null,
       });
 
     expect(rootChangeResponse.status).toBe(200);
@@ -99,12 +98,12 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 3: NON-EXISTENT MENU ID =====
     console.log('🧪 Testing non-existent menu ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/999999`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: parent1Id
+        menu_id: parent1Id,
       });
 
     expect(nonExistentResponse.status).toBe(404);
@@ -112,12 +111,12 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 4: NON-EXISTENT PARENT ID =====
     console.log('🧪 Testing non-existent parent ID...');
-    
+
     const nonExistentParentResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: 999999
+        menu_id: 999999,
       });
 
     expect(nonExistentParentResponse.status).toBe(404);
@@ -125,12 +124,12 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 5: CHANGE TO ITSELF AS PARENT =====
     console.log('🧪 Testing change to itself as parent...');
-    
+
     const selfParentResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: childId
+        menu_id: childId,
       });
 
     expect(selfParentResponse.status).toBe(200);
@@ -138,7 +137,7 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 6: CHANGE TO CHILD AS PARENT (CIRCULAR REFERENCE) =====
     console.log('🧪 Testing change to child as parent...');
-    
+
     // Create a grandchild menu
     const grandchildResponse = await supertest(web)
       .post(baseUrlTest)
@@ -146,7 +145,7 @@ describe('Menu Change Parent Business Flow', () => {
       .send({
         key_menu: 'grandchild-menu',
         name: 'Grandchild Menu',
-        menu_id: childId
+        menu_id: childId,
       });
 
     expect(grandchildResponse.status).toBe(200);
@@ -157,7 +156,7 @@ describe('Menu Change Parent Business Flow', () => {
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: grandchildId
+        menu_id: grandchildId,
       });
 
     expect(circularReferenceResponse.status).toBe(200);
@@ -165,7 +164,7 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 7: MISSING MENU_ID FIELD =====
     console.log('🧪 Testing missing menu_id field...');
-    
+
     const missingMenuIdResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
@@ -176,26 +175,25 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 8: INVALID MENU_ID FORMAT =====
     console.log('🧪 Testing invalid menu_id format...');
-    
+
     const invalidMenuIdResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: 'invalid'
+        menu_id: 'invalid',
       });
-
 
     expect(invalidMenuIdResponse.status).toBe(404);
     expect(invalidMenuIdResponse.body.errors).toBeDefined();
 
     // ===== TEST 9: NEGATIVE MENU_ID =====
     console.log('🧪 Testing negative menu_id...');
-    
+
     const negativeMenuIdResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: -1
+        menu_id: -1,
       });
 
     expect(negativeMenuIdResponse.status).toBe(404);
@@ -206,14 +204,14 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 10: EXTRA FIELDS =====
     console.log('🧪 Testing extra fields...');
-    
+
     const extraFieldsResponse = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
         menu_id: parent1Id,
         extra_field: 'should be ignored',
-        another_field: 123
+        another_field: 123,
       });
 
     expect(extraFieldsResponse.status).toBe(200);
@@ -221,13 +219,13 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 11: MULTIPLE PARENT CHANGES =====
     console.log('🧪 Testing multiple parent changes...');
-    
+
     // Change parent multiple times
     const change1Response = await supertest(web)
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: parent2Id
+        menu_id: parent2Id,
       });
 
     expect(change1Response.status).toBe(200);
@@ -237,7 +235,7 @@ describe('Menu Change Parent Business Flow', () => {
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: parent1Id
+        menu_id: parent1Id,
       });
 
     expect(change2Response.status).toBe(200);
@@ -247,7 +245,7 @@ describe('Menu Change Parent Business Flow', () => {
       .post(`${baseUrlTest}/change-parent/${childId}`)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        menu_id: null
+        menu_id: null,
       });
 
     expect(change3Response.status).toBe(200);
@@ -255,43 +253,49 @@ describe('Menu Change Parent Business Flow', () => {
 
     // ===== TEST 12: CONCURRENT PARENT CHANGES =====
     console.log('🧪 Testing concurrent parent changes...');
-    
+
     // Create additional menus for concurrent testing
-    const concurrentMenuPromises = Array(3).fill(null).map((_, index) =>
-      supertest(web)
-        .post(baseUrlTest)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          key_menu: `concurrent-menu-${index + 1}`,
-          name: `Concurrent Menu ${index + 1}`,
-          active: 'Active',
-          menu_id: parent1Id
-        })
-    );
+    const concurrentMenuPromises = Array(3)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .post(baseUrlTest)
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            key_menu: `concurrent-menu-${index + 1}`,
+            name: `Concurrent Menu ${index + 1}`,
+            active: 'Active',
+            menu_id: parent1Id,
+          }),
+      );
 
     const concurrentCreateResponses = await Promise.all(concurrentMenuPromises);
-    const concurrentMenuIds = concurrentCreateResponses.map(response => response.body.data.id);
+    const concurrentMenuIds = concurrentCreateResponses.map(
+      (response) => response.body.data.id,
+    );
 
     // Make concurrent parent change requests
-    const concurrentChangePromises = concurrentMenuIds.map(menuId =>
+    const concurrentChangePromises = concurrentMenuIds.map((menuId) =>
       supertest(web)
         .post(`${baseUrlTest}/change-parent/${menuId}`)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          menu_id: parent2Id
-        })
+          menu_id: parent2Id,
+        }),
     );
 
-    const concurrentChangeResponses = await Promise.all(concurrentChangePromises);
+    const concurrentChangeResponses = await Promise.all(
+      concurrentChangePromises,
+    );
 
-    concurrentChangeResponses.forEach(response => {
+    concurrentChangeResponses.forEach((response) => {
       expect(response.status).toBe(200);
       expect(response.body.data.menu_id).toBe(parent2Id);
     });
 
     // ===== TEST 13: VERIFY PARENT CHANGES =====
     console.log('🧪 Testing verify parent changes...');
-    
+
     // Get the menu list to verify parent changes
     const listResponse = await supertest(web)
       .get(`${baseUrlTest}/0`)
@@ -302,7 +306,9 @@ describe('Menu Change Parent Business Flow', () => {
     expect(Array.isArray(listResponse.body.data)).toBe(true);
 
     // Verify that the child menu is now at root level
-    const childMenu = listResponse.body.data.find((menu: any) => menu.id === childId);
+    const childMenu = listResponse.body.data.find(
+      (menu: any) => menu.id === childId,
+    );
     expect(childMenu).toBeDefined();
     expect(childMenu.menu_id).toBeNull();
 

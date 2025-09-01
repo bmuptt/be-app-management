@@ -1,4 +1,4 @@
-import { ILoginRequest } from "./auth-model";
+import { ILoginRequest } from './auth-model';
 
 export interface IRequestUser {
   name: string;
@@ -8,7 +8,9 @@ export interface IRequestUser {
   role_id?: number | null;
 }
 
-export interface IUserObject extends ILoginRequest, Pick<IRequestUser, "name" | "gender" | "birthdate" | "role_id"> {
+export interface IUserObject
+  extends ILoginRequest,
+    Pick<IRequestUser, 'name' | 'gender' | 'birthdate' | 'role_id'> {
   id: number;
   photo?: string | null;
   active: string;
@@ -19,7 +21,8 @@ export interface IUserObject extends ILoginRequest, Pick<IRequestUser, "name" | 
 }
 
 // Interface untuk user tanpa password (untuk internal use)
-export interface IUserObjectWithoutPassword extends Pick<IRequestUser, "name" | "gender" | "birthdate" | "role_id"> {
+export interface IUserObjectWithoutPassword
+  extends Pick<IRequestUser, 'name' | 'gender' | 'birthdate' | 'role_id'> {
   id: number;
   email: string;
   photo?: string | null;

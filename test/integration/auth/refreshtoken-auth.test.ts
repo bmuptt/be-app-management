@@ -30,12 +30,10 @@ describe('Refresh Token Authentication', () => {
   it('Should handle complete refresh token flow including validation, success cases, and edge cases', async () => {
     // ===== TEST 1: SUCCESSFUL REFRESH TOKEN =====
     console.log('🧪 Testing successful refresh token...');
-    
-    const response = await supertest(web)
-      .post('/api/refresh-token')
-      .send({
-        refresh_token,
-      });
+
+    const response = await supertest(web).post('/api/refresh-token').send({
+      refresh_token,
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.message).toBe('Login successful');
@@ -47,15 +45,30 @@ describe('Refresh Token Authentication', () => {
 
     // ===== TEST 2: VALIDATION ERRORS =====
     console.log('🧪 Testing validation errors...');
-    
+
     const validationTestCases = [
       { data: {}, expectedError: 'Refresh token not found' },
       { data: { refresh_token: '' }, expectedError: 'Refresh token not found' },
-      { data: { refresh_token: null }, expectedError: 'Refresh token not found' },
-      { data: { refresh_token: 'invalid_token_format' }, expectedError: 'Refresh token not found' },
-      { data: { refresh_token: 'token_with_special_chars!@#$%^&*()' }, expectedError: 'Refresh token not found' },
-      { data: { refresh_token: 'a'.repeat(1000) }, expectedError: 'Refresh token not found' },
-      { data: { refresh_token: '   ' }, expectedError: 'Refresh token not found' },
+      {
+        data: { refresh_token: null },
+        expectedError: 'Refresh token not found',
+      },
+      {
+        data: { refresh_token: 'invalid_token_format' },
+        expectedError: 'Refresh token not found',
+      },
+      {
+        data: { refresh_token: 'token_with_special_chars!@#$%^&*()' },
+        expectedError: 'Refresh token not found',
+      },
+      {
+        data: { refresh_token: 'a'.repeat(1000) },
+        expectedError: 'Refresh token not found',
+      },
+      {
+        data: { refresh_token: '   ' },
+        expectedError: 'Refresh token not found',
+      },
     ];
 
     for (const testCase of validationTestCases) {
@@ -69,17 +82,15 @@ describe('Refresh Token Authentication', () => {
 
     // ===== TEST 3: TOKEN REUSE PROTECTION =====
     console.log('🧪 Testing token reuse protection...');
-    
+
     // Get a fresh refresh token for this test
     const freshLoginResponse = await AuthLogic.getLoginSuperAdmin();
     const freshRefreshToken = freshLoginResponse.body.refresh_token;
-    
+
     // First refresh - should succeed
-    const firstResponse = await supertest(web)
-      .post('/api/refresh-token')
-      .send({
-        refresh_token: freshRefreshToken,
-      });
+    const firstResponse = await supertest(web).post('/api/refresh-token').send({
+      refresh_token: freshRefreshToken,
+    });
 
     expect(firstResponse.status).toBe(200);
 
@@ -95,24 +106,23 @@ describe('Refresh Token Authentication', () => {
 
     // ===== TEST 4: HTTP METHODS =====
     console.log('🧪 Testing HTTP methods...');
-    
+
     const httpMethods = ['get', 'put', 'delete', 'patch'];
     for (const method of httpMethods) {
-      const response = await supertest(web)[method]('/api/refresh-token')
-        .send({
-          refresh_token,
-        });
+      const response = await supertest(web)[method]('/api/refresh-token').send({
+        refresh_token,
+      });
 
       expect(response.status).toBe(404);
     }
 
     // ===== TEST 5: EXTRA FIELDS AND PARAMETERS =====
     console.log('🧪 Testing extra fields and parameters...');
-    
+
     // Get fresh refresh token for this test
     const extraFieldsLoginResponse = await AuthLogic.getLoginSuperAdmin();
     const extraFieldsRefreshToken = extraFieldsLoginResponse.body.refresh_token;
-    
+
     // Test with extra fields
     const extraFieldsResponse = await supertest(web)
       .post('/api/refresh-token')
@@ -131,7 +141,7 @@ describe('Refresh Token Authentication', () => {
     // Get fresh refresh token for query parameters test
     const queryParamLoginResponse = await AuthLogic.getLoginSuperAdmin();
     const queryParamRefreshToken = queryParamLoginResponse.body.refresh_token;
-    
+
     // Test with query parameters
     const queryParamResponse = await supertest(web)
       .post('/api/refresh-token?include=extra&data=test')
@@ -146,11 +156,11 @@ describe('Refresh Token Authentication', () => {
 
     // ===== TEST 6: ADDITIONAL HEADERS =====
     console.log('🧪 Testing additional headers...');
-    
+
     // Get fresh refresh token for headers test
     const headerLoginResponse = await AuthLogic.getLoginSuperAdmin();
     const headerRefreshToken = headerLoginResponse.body.refresh_token;
-    
+
     const headerResponse = await supertest(web)
       .post('/api/refresh-token')
       .set('User-Agent', 'Test-Agent')
@@ -167,13 +177,15 @@ describe('Refresh Token Authentication', () => {
 
     // ===== TEST 7: LOGOUT INTEGRATION =====
     console.log('🧪 Testing logout integration...');
-    
+
     // Get fresh login for logout test
     const logoutLoginResponse = await AuthLogic.getLoginSuperAdmin();
     const logoutRefreshToken = logoutLoginResponse.body.refresh_token;
     const logoutCookies = logoutLoginResponse.headers['set-cookie'];
-    const logoutCookieHeader = Array.isArray(logoutCookies) ? logoutCookies.join('; ') : logoutCookies;
-    
+    const logoutCookieHeader = Array.isArray(logoutCookies)
+      ? logoutCookies.join('; ')
+      : logoutCookies;
+
     // First, logout the user
     const logoutResponse = await supertest(web)
       .post('/api/logout')
@@ -189,7 +201,9 @@ describe('Refresh Token Authentication', () => {
       });
 
     expect(refreshAfterLogoutResponse.status).toBe(403);
-    expect(refreshAfterLogoutResponse.body.errors).toContain('Refresh token not found');
+    expect(refreshAfterLogoutResponse.body.errors).toContain(
+      'Refresh token not found',
+    );
 
     console.log('✅ All refresh token flow tests completed successfully');
   });

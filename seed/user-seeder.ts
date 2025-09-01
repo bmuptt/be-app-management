@@ -12,9 +12,9 @@ async function main() {
       name: 'App Management',
       order_number: 1,
       active: 'Active',
-      created_by: 0
-    }
-  })
+      created_by: 0,
+    },
+  });
 
   const menuUser = await prismaClient.menu.create({
     data: {
@@ -24,9 +24,9 @@ async function main() {
       url: '/app-management/user',
       menu_id: menuAppManagement.id,
       active: 'Active',
-      created_by: 0
-    }
-  })
+      created_by: 0,
+    },
+  });
 
   const menuRole = await prismaClient.menu.create({
     data: {
@@ -36,9 +36,9 @@ async function main() {
       url: '/app-management/role',
       menu_id: menuAppManagement.id,
       active: 'Active',
-      created_by: 0
-    }
-  })
+      created_by: 0,
+    },
+  });
 
   const menuMenu = await prismaClient.menu.create({
     data: {
@@ -48,9 +48,9 @@ async function main() {
       url: '/app-management/menu',
       menu_id: menuAppManagement.id,
       active: 'Active',
-      created_by: 0
-    }
-  })
+      created_by: 0,
+    },
+  });
 
   const menuRoleMenu = await prismaClient.menu.create({
     data: {
@@ -60,17 +60,17 @@ async function main() {
       url: '/app-management/role-menu',
       menu_id: menuAppManagement.id,
       active: 'Active',
-      created_by: 0
-    }
-  })
+      created_by: 0,
+    },
+  });
 
   // role
   const roleAdmin = await prismaClient.role.create({
     data: {
       name: 'Super Admin',
-      created_by: 0
-    }
-  })
+      created_by: 0,
+    },
+  });
 
   // role menu
   await prismaClient.roleMenu.create({
@@ -78,8 +78,8 @@ async function main() {
       role_id: roleAdmin.id,
       menu_id: menuAppManagement.id,
       access: true,
-    }
-  })
+    },
+  });
 
   await prismaClient.roleMenu.create({
     data: {
@@ -91,9 +91,9 @@ async function main() {
       delete: true,
       approval: false,
       approval_2: false,
-      approval_3: false
-    }
-  })
+      approval_3: false,
+    },
+  });
 
   await prismaClient.roleMenu.create({
     data: {
@@ -105,9 +105,9 @@ async function main() {
       delete: true,
       approval: false,
       approval_2: false,
-      approval_3: false
-    }
-  })
+      approval_3: false,
+    },
+  });
 
   await prismaClient.roleMenu.create({
     data: {
@@ -119,9 +119,9 @@ async function main() {
       delete: true,
       approval: false,
       approval_2: false,
-      approval_3: false
-    }
-  })
+      approval_3: false,
+    },
+  });
 
   await prismaClient.roleMenu.create({
     data: {
@@ -133,9 +133,9 @@ async function main() {
       delete: true,
       approval: false,
       approval_2: false,
-      approval_3: false
-    }
-  })
+      approval_3: false,
+    },
+  });
 
   // User
   const hashedPassword = await bcrypt.hash(passAdmin, 10);
@@ -150,7 +150,7 @@ async function main() {
       birthdate: new Date('2001-01-01'),
       active: 'Active',
       role_id: roleAdmin.id,
-      created_by: 0
+      created_by: 0,
     },
   });
 

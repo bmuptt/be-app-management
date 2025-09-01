@@ -35,14 +35,14 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL MENU DETAIL RETRIEVAL =====
     console.log('🧪 Testing successful menu detail retrieval...');
-    
+
     // Create a test menu first
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu',
-        name: 'Test Menu'
+        name: 'Test Menu',
       });
 
     expect(createResponse.status).toBe(200);
@@ -65,7 +65,7 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT MENU ID =====
     console.log('🧪 Testing non-existent menu ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .get(`${baseUrlTest}/999/detail`)
       .set('Cookie', cookieHeader ?? '');
@@ -75,7 +75,7 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 3: NEGATIVE MENU ID =====
     console.log('🧪 Testing negative menu ID...');
-    
+
     const negativeIdResponse = await supertest(web)
       .get(`${baseUrlTest}/-1/detail`)
       .set('Cookie', cookieHeader ?? '');
@@ -85,7 +85,7 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 4: ZERO MENU ID =====
     console.log('🧪 Testing zero menu ID...');
-    
+
     const zeroIdResponse = await supertest(web)
       .get(`${baseUrlTest}/0/detail`)
       .set('Cookie', cookieHeader ?? '');
@@ -95,7 +95,7 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 5: VERY LARGE MENU ID =====
     console.log('🧪 Testing very large menu ID...');
-    
+
     const largeIdResponse = await supertest(web)
       .get(`${baseUrlTest}/999999999999/detail`)
       .set('Cookie', cookieHeader ?? '');
@@ -105,7 +105,7 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 6: DECIMAL MENU ID =====
     console.log('🧪 Testing decimal menu ID...');
-    
+
     const decimalIdResponse = await supertest(web)
       .get(`${baseUrlTest}/999.5/detail`)
       .set('Cookie', cookieHeader ?? '');
@@ -115,7 +115,7 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 7: INVALID MENU ID FORMAT =====
     console.log('🧪 Testing invalid menu ID format...');
-    
+
     const invalidIdResponse = await supertest(web)
       .get(`${baseUrlTest}/invalid/detail`)
       .set('Cookie', cookieHeader ?? '');
@@ -125,14 +125,14 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 8: MENU WITH SUBMENUS =====
     console.log('🧪 Testing menu with submenus...');
-    
+
     // Create parent menu
     const parentResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-menu',
-        name: 'Parent Menu'
+        name: 'Parent Menu',
       });
 
     expect(parentResponse.status).toBe(200);
@@ -145,7 +145,7 @@ describe('Menu Detail Business Flow', () => {
       .send({
         key_menu: 'submenu',
         name: 'Submenu',
-        menu_id: parentId
+        menu_id: parentId,
       });
 
     expect(submenuResponse.status).toBe(200);
@@ -175,14 +175,14 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 9: INACTIVE MENU =====
     console.log('🧪 Testing inactive menu...');
-    
+
     // Create a test menu for deactivation
     const inactiveMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'inactive-menu',
-        name: 'Inactive Menu'
+        name: 'Inactive Menu',
       });
 
     expect(inactiveMenuResponse.status).toBe(200);
@@ -206,14 +206,14 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 10: RESPONSE STRUCTURE VALIDATION =====
     console.log('🧪 Testing response structure validation...');
-    
+
     // Create a test menu for structure validation
     const structureMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'structure-menu',
-        name: 'Structure Menu'
+        name: 'Structure Menu',
       });
 
     expect(structureMenuResponse.status).toBe(200);
@@ -227,7 +227,7 @@ describe('Menu Detail Business Flow', () => {
     expect(structureResponse.status).toBe(200);
     expect(structureResponse.body).toHaveProperty('data');
     expect(structureResponse.body).not.toHaveProperty('errors');
-    
+
     const menuData = structureResponse.body.data;
     expect(menuData).toHaveProperty('id');
     expect(menuData).toHaveProperty('key_menu');
@@ -240,14 +240,14 @@ describe('Menu Detail Business Flow', () => {
 
     // ===== TEST 11: MULTIPLE DETAIL REQUESTS FOR SAME MENU =====
     console.log('🧪 Testing multiple detail requests for same menu...');
-    
+
     // Create a test menu for multiple requests
     const multipleMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'multiple-menu',
-        name: 'Multiple Menu'
+        name: 'Multiple Menu',
       });
 
     expect(multipleMenuResponse.status).toBe(200);

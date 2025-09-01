@@ -20,7 +20,7 @@ describe('Auth Login Logout Flow', () => {
   it('Should handle complete auth flow including login errors, success login, logout, and session management', async () => {
     // ===== TEST 1: LOGIN ERROR CASES =====
     console.log('🧪 Testing login error cases...');
-    
+
     // Empty email and password
     const emptyFieldsResponse = await supertest(web).post('/api/login').send({
       email: '',
@@ -28,7 +28,11 @@ describe('Auth Login Logout Flow', () => {
     });
     expect(emptyFieldsResponse.status).toBe(400);
     expect(emptyFieldsResponse.body.errors).toEqual(
-      expect.arrayContaining(['Invalid email', 'Email is required', 'Password is required'])
+      expect.arrayContaining([
+        'Invalid email',
+        'Email is required',
+        'Password is required',
+      ]),
     );
 
     // Empty email only
@@ -38,7 +42,7 @@ describe('Auth Login Logout Flow', () => {
     });
     expect(emptyEmailResponse.status).toBe(400);
     expect(emptyEmailResponse.body.errors).toEqual(
-      expect.arrayContaining(['Invalid email', 'Email is required'])
+      expect.arrayContaining(['Invalid email', 'Email is required']),
     );
 
     // Empty password only
@@ -48,7 +52,7 @@ describe('Auth Login Logout Flow', () => {
     });
     expect(emptyPasswordResponse.status).toBe(400);
     expect(emptyPasswordResponse.body.errors).toEqual(
-      expect.arrayContaining(['Password is required'])
+      expect.arrayContaining(['Password is required']),
     );
 
     // Invalid email format
@@ -58,7 +62,7 @@ describe('Auth Login Logout Flow', () => {
     });
     expect(invalidEmailResponse.status).toBe(400);
     expect(invalidEmailResponse.body.errors).toEqual(
-      expect.arrayContaining(['Invalid email'])
+      expect.arrayContaining(['Invalid email']),
     );
 
     // User not found
@@ -68,7 +72,7 @@ describe('Auth Login Logout Flow', () => {
     });
     expect(userNotFoundResponse.status).toBe(400);
     expect(userNotFoundResponse.body.errors).toEqual(
-      expect.arrayContaining(['Email or password is incorrect!'])
+      expect.arrayContaining(['Email or password is incorrect!']),
     );
 
     // Wrong password
@@ -78,12 +82,12 @@ describe('Auth Login Logout Flow', () => {
     });
     expect(wrongPasswordResponse.status).toBe(400);
     expect(wrongPasswordResponse.body.errors).toEqual(
-      expect.arrayContaining(['Email or password is incorrect!'])
+      expect.arrayContaining(['Email or password is incorrect!']),
     );
 
     // ===== TEST 2: SUCCESSFUL LOGIN =====
     console.log('🧪 Testing successful login...');
-    
+
     const loginResponse = await AuthLogic.getLoginSuperAdmin();
     expect(loginResponse.status).toBe(200);
     expect(loginResponse.body).toHaveProperty('refresh_token');
@@ -98,7 +102,7 @@ describe('Auth Login Logout Flow', () => {
 
     // ===== TEST 3: LOGOUT FLOW =====
     console.log('🧪 Testing logout flow...');
-    
+
     // Logout without authentication should fail
     const logoutWithoutAuthResponse = await supertest(web).post('/api/logout');
     expect(logoutWithoutAuthResponse.status).toBe(401);
@@ -112,7 +116,7 @@ describe('Auth Login Logout Flow', () => {
 
     // ===== TEST 4: SESSION INVALIDATION =====
     console.log('🧪 Testing session invalidation...');
-    
+
     // Try to access protected endpoint with invalidated session
     const profileResponse = await supertest(web)
       .get('/api/profile')
@@ -121,7 +125,7 @@ describe('Auth Login Logout Flow', () => {
 
     // ===== TEST 5: MULTIPLE LOGIN-LOGOUT CYCLES =====
     console.log('🧪 Testing multiple login-logout cycles...');
-    
+
     for (let i = 0; i < 3; i++) {
       // Login
       const cycleLoginResponse = await AuthLogic.getLoginSuperAdmin();
@@ -141,5 +145,4 @@ describe('Auth Login Logout Flow', () => {
 
     console.log('✅ All auth flow tests completed successfully');
   });
-
 });

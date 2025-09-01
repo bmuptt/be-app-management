@@ -35,13 +35,13 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL USER CREATION =====
     console.log('🧪 Testing successful user creation...');
-    
+
     const userData = {
       email: 'newuser@example.com',
       name: 'New User',
       gender: 'Male',
       birthdate: '1990-01-01',
-      role_id: 1
+      role_id: 1,
     };
 
     const response = await supertest(web)
@@ -59,23 +59,35 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 2: VALIDATION ERRORS FOR MISSING REQUIRED FIELDS =====
     console.log('🧪 Testing validation errors for missing required fields...');
-    
+
     const testCases = [
-      { 
-        data: {}, 
-        expectedErrors: ['The email is required!', 'The name is required!', 'The gender is required!', 'The birthdate is required!'] 
+      {
+        data: {},
+        expectedErrors: [
+          'The email is required!',
+          'The name is required!',
+          'The gender is required!',
+          'The birthdate is required!',
+        ],
       },
-      { 
-        data: { email: 'test@example.com' }, 
-        expectedErrors: ['The name is required!', 'The gender is required!', 'The birthdate is required!'] 
+      {
+        data: { email: 'test@example.com' },
+        expectedErrors: [
+          'The name is required!',
+          'The gender is required!',
+          'The birthdate is required!',
+        ],
       },
-      { 
-        data: { email: 'test@example.com', name: 'Test User' }, 
-        expectedErrors: ['The gender is required!', 'The birthdate is required!'] 
+      {
+        data: { email: 'test@example.com', name: 'Test User' },
+        expectedErrors: [
+          'The gender is required!',
+          'The birthdate is required!',
+        ],
       },
-      { 
-        data: { email: 'test@example.com', name: 'Test User', gender: 'Male' }, 
-        expectedErrors: ['The birthdate is required!'] 
+      {
+        data: { email: 'test@example.com', name: 'Test User', gender: 'Male' },
+        expectedErrors: ['The birthdate is required!'],
       },
     ];
 
@@ -86,12 +98,14 @@ describe('Store User Business Flow', () => {
         .send(testCase.data);
 
       expect(validationResponse.status).toBe(400);
-      expect(validationResponse.body.errors).toEqual(expect.arrayContaining(testCase.expectedErrors));
+      expect(validationResponse.body.errors).toEqual(
+        expect.arrayContaining(testCase.expectedErrors),
+      );
     }
 
     // ===== TEST 3: VALIDATION ERRORS FOR INVALID EMAIL FORMAT =====
     console.log('🧪 Testing validation errors for invalid email format...');
-    
+
     const emailTestCases = [
       { email: 'invalid-email', expectedError: 'Invalid email' },
       { email: 'test@', expectedError: 'Invalid email' },
@@ -109,7 +123,7 @@ describe('Store User Business Flow', () => {
           name: 'Test User',
           gender: 'Male',
           birthdate: '1990-01-01',
-          role_id: 1
+          role_id: 1,
         });
 
       expect(emailResponse.status).toBe(400);
@@ -118,15 +132,36 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 4: VALIDATION ERRORS FOR INVALID BIRTHDATE FORMAT =====
     console.log('🧪 Testing validation errors for invalid birthdate format...');
-    
+
     const birthdateTestCases = [
-      { birthdate: 'invalid-date', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990/01/01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '01-01-1990', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-13-01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-01-32', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-00-01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-01-00', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+      {
+        birthdate: 'invalid-date',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990/01/01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '01-01-1990',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-13-01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-01-32',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-00-01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-01-00',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
     ];
 
     for (const testCase of birthdateTestCases) {
@@ -138,7 +173,7 @@ describe('Store User Business Flow', () => {
           name: 'Test User',
           gender: 'Male',
           birthdate: testCase.birthdate,
-          role_id: 1
+          role_id: 1,
         });
 
       expect(birthdateResponse.status).toBe(400);
@@ -147,7 +182,7 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 5: VALIDATION ERRORS FOR EMPTY FIELDS =====
     console.log('🧪 Testing validation errors for empty fields...');
-    
+
     // Empty gender
     const emptyGenderResponse = await supertest(web)
       .post(baseUrlTest)
@@ -157,11 +192,13 @@ describe('Store User Business Flow', () => {
         name: 'Test User',
         gender: '',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(emptyGenderResponse.status).toBe(400);
-    expect(emptyGenderResponse.body.errors).toContain('The gender is required!');
+    expect(emptyGenderResponse.body.errors).toContain(
+      'The gender is required!',
+    );
 
     // Empty name
     const emptyNameResponse = await supertest(web)
@@ -172,7 +209,7 @@ describe('Store User Business Flow', () => {
         name: '',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(emptyNameResponse.status).toBe(400);
@@ -180,14 +217,14 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 6: DUPLICATE EMAIL ERROR =====
     console.log('🧪 Testing duplicate email error...');
-    
+
     // First, create a user
     const duplicateUserData = {
       email: 'duplicate@example.com',
       name: 'First User',
       gender: 'Male',
       birthdate: '1990-01-01',
-      role_id: 1
+      role_id: 1,
     };
 
     const firstUserResponse = await supertest(web)
@@ -206,15 +243,17 @@ describe('Store User Business Flow', () => {
         name: 'Second User',
         gender: 'Female',
         birthdate: '1995-05-05',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(duplicateResponse.status).toBe(400);
-    expect(duplicateResponse.body.errors).toContain('The email cannot be the same!');
+    expect(duplicateResponse.body.errors).toContain(
+      'The email cannot be the same!',
+    );
 
     // ===== TEST 7: DIFFERENT GENDER VALUES =====
     console.log('🧪 Testing different gender values...');
-    
+
     const genderTestCases = [
       { gender: 'Male', name: 'Male User' },
       { gender: 'Female', name: 'Female User' },
@@ -229,7 +268,7 @@ describe('Store User Business Flow', () => {
           name: testCase.name,
           gender: testCase.gender,
           birthdate: '1990-01-01',
-          role_id: 1
+          role_id: 1,
         });
 
       expect(genderResponse.status).toBe(200);
@@ -239,7 +278,7 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 8: VARIOUS VALID BIRTHDATE FORMATS =====
     console.log('🧪 Testing various valid birthdate formats...');
-    
+
     const birthdateValidTestCases = [
       { birthdate: '1990-01-01', name: 'User1990' },
       { birthdate: '2000-12-31', name: 'User2000' },
@@ -256,17 +295,19 @@ describe('Store User Business Flow', () => {
           name: testCase.name,
           gender: 'Male',
           birthdate: testCase.birthdate,
-          role_id: 1
+          role_id: 1,
         });
 
       expect(birthdateValidResponse.status).toBe(200);
-      expect(birthdateValidResponse.body.data.birthdate).toContain(testCase.birthdate);
+      expect(birthdateValidResponse.body.data.birthdate).toContain(
+        testCase.birthdate,
+      );
       expect(birthdateValidResponse.body.data.name).toBe(testCase.name);
     }
 
     // ===== TEST 9: SPECIAL CHARACTERS IN NAME FIELD =====
     console.log('🧪 Testing special characters in name field...');
-    
+
     const specialCharTestCases = [
       { name: 'John-Doe', gender: 'Male' },
       { name: "O'Connor", gender: 'Male' },
@@ -282,7 +323,7 @@ describe('Store User Business Flow', () => {
           name: testCase.name,
           gender: testCase.gender,
           birthdate: '1990-01-01',
-          role_id: 1
+          role_id: 1,
         });
 
       expect(specialCharResponse.status).toBe(200);
@@ -292,35 +333,39 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 10: CONCURRENT USER CREATION =====
     console.log('🧪 Testing concurrent user creation...');
-    
+
     const concurrentUserData = {
       gender: 'Male',
       birthdate: '1990-01-01',
-      role_id: 1
+      role_id: 1,
     };
 
-    const promises = Array(3).fill(null).map((_, index) =>
-      supertest(web)
-        .post(baseUrlTest)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          ...concurrentUserData,
-          email: `concurrent${index + 1}@example.com`,
-          name: `ConcurrentUser${index + 1}`
-        })
-    );
+    const promises = Array(3)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .post(baseUrlTest)
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            ...concurrentUserData,
+            email: `concurrent${index + 1}@example.com`,
+            name: `ConcurrentUser${index + 1}`,
+          }),
+      );
 
     const concurrentResponses = await Promise.all(promises);
 
     concurrentResponses.forEach((response, index) => {
       expect(response.status).toBe(200);
       expect(response.body.data.name).toBe(`ConcurrentUser${index + 1}`);
-      expect(response.body.data.email).toBe(`concurrent${index + 1}@example.com`);
+      expect(response.body.data.email).toBe(
+        `concurrent${index + 1}@example.com`,
+      );
     });
 
     // ===== TEST 11: USER CREATION WITH EXTRA FIELDS =====
     console.log('🧪 Testing user creation with extra fields...');
-    
+
     const extraFieldsData = {
       email: 'test@example.com',
       name: 'Test User',
@@ -329,7 +374,7 @@ describe('Store User Business Flow', () => {
       role_id: 1,
       extra_field: 'should be ignored',
       another_field: 123,
-      nested_field: { key: 'value' }
+      nested_field: { key: 'value' },
     };
 
     const extraFieldsResponse = await supertest(web)
@@ -347,13 +392,13 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 12: USER CREATION WITH QUERY PARAMETERS =====
     console.log('🧪 Testing user creation with query parameters...');
-    
+
     const queryParamData = {
       email: 'queryparam@example.com',
       name: 'Query Param User',
       gender: 'Male',
       birthdate: '1990-01-01',
-      role_id: 1
+      role_id: 1,
     };
 
     const queryParamResponse = await supertest(web)
@@ -367,7 +412,7 @@ describe('Store User Business Flow', () => {
 
     // ===== TEST 13: DIFFERENT ROLE ASSIGNMENTS =====
     console.log('🧪 Testing different role assignments...');
-    
+
     const roleTestCases = [
       { role_id: 1, name: 'Role1User' },
       { role_id: 1, name: 'Role1User2' }, // Same role, different user
@@ -382,7 +427,7 @@ describe('Store User Business Flow', () => {
           name: testCase.name,
           gender: 'Male',
           birthdate: '1990-01-01',
-          role_id: testCase.role_id
+          role_id: testCase.role_id,
         });
 
       expect(roleResponse.status).toBe(200);

@@ -1,20 +1,20 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prismaClient } from '../../config/database';
 import { IMenuRepository } from '../contract/menu-repository.contract';
-import { 
-  IMenuObject, 
-  IMenuCreateData, 
-  IMenuUpdateData, 
+import {
+  IMenuObject,
+  IMenuCreateData,
+  IMenuUpdateData,
   IMenuChangeParentData,
-  IMenuActiveData
+  IMenuActiveData,
 } from '../../model/menu-model';
 
 export class MenuRepository implements IMenuRepository {
   async findMany(
-    where: Prisma.MenuWhereInput, 
-    orderBy: Prisma.MenuOrderByWithRelationInput[], 
-    skip: number, 
-    take: number
+    where: Prisma.MenuWhereInput,
+    orderBy: Prisma.MenuOrderByWithRelationInput[],
+    skip: number,
+    take: number,
   ): Promise<IMenuObject[]> {
     return await prismaClient.menu.findMany({
       where,
@@ -25,8 +25,8 @@ export class MenuRepository implements IMenuRepository {
   }
 
   async findManyWithChildren(
-    where: Prisma.MenuWhereInput, 
-    orderBy: Prisma.MenuOrderByWithRelationInput[]
+    where: Prisma.MenuWhereInput,
+    orderBy: Prisma.MenuOrderByWithRelationInput[],
   ): Promise<IMenuObject[]> {
     return await prismaClient.menu.findMany({
       include: {
@@ -62,7 +62,9 @@ export class MenuRepository implements IMenuRepository {
     });
   }
 
-  async findFirstByParentId(menuId: number | null): Promise<IMenuObject | null> {
+  async findFirstByParentId(
+    menuId: number | null,
+  ): Promise<IMenuObject | null> {
     return await prismaClient.menu.findFirst({
       where: {
         menu_id: menuId,
@@ -109,14 +111,19 @@ export class MenuRepository implements IMenuRepository {
     });
   }
 
-  async changeParent(id: number, data: IMenuChangeParentData): Promise<IMenuObject> {
+  async changeParent(
+    id: number,
+    data: IMenuChangeParentData,
+  ): Promise<IMenuObject> {
     return await prismaClient.menu.update({
       where: { id },
       data,
     });
   }
 
-  async sortMenus(menus: { id: number; order_number: number; updated_by?: number | null }[]): Promise<void> {
+  async sortMenus(
+    menus: { id: number; order_number: number; updated_by?: number | null }[],
+  ): Promise<void> {
     await prismaClient.$transaction(async (tx) => {
       await Promise.all(
         menus.map((data) =>
@@ -126,13 +133,16 @@ export class MenuRepository implements IMenuRepository {
               order_number: data.order_number,
               updated_by: data.updated_by,
             },
-          })
-        )
+          }),
+        ),
       );
     });
   }
 
-  async deleteWithTransaction(id: number, updatedBy: number): Promise<IMenuObject> {
+  async deleteWithTransaction(
+    id: number,
+    updatedBy: number,
+  ): Promise<IMenuObject> {
     return await prismaClient.$transaction(async (tx) => {
       await tx.roleMenu.deleteMany({
         where: { menu_id: id },

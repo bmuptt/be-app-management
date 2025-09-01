@@ -34,13 +34,13 @@ describe('Detail Role Business Flow', () => {
     jest.setTimeout(30000);
     // ===== TEST 1: SUCCESSFUL ROLE DETAIL =====
     console.log('🧪 Testing successful role detail...');
-    
+
     // First create a role to get its ID
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Test Role for Detail'
+        name: 'Test Role for Detail',
       });
 
     expect(createResponse.status).toBe(200);
@@ -62,17 +62,19 @@ describe('Detail Role Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT ROLE ID =====
     console.log('🧪 Testing non-existent role ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .get(`${baseUrlTest}/999999`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain('The role does not exist!');
+    expect(nonExistentResponse.body.errors).toContain(
+      'The role does not exist!',
+    );
 
     // ===== TEST 3: INVALID ROLE ID FORMAT =====
     console.log('🧪 Testing invalid role ID format...');
-    
+
     const invalidFormatResponse = await supertest(web)
       .get(`${baseUrlTest}/invalid`)
       .set('Cookie', cookieHeader ?? '');
@@ -83,7 +85,7 @@ describe('Detail Role Business Flow', () => {
 
     // ===== TEST 4: EDGE CASES =====
     console.log('🧪 Testing edge cases...');
-    
+
     // Negative role ID
     const negativeResponse = await supertest(web)
       .get(`${baseUrlTest}/-1`)
@@ -120,7 +122,7 @@ describe('Detail Role Business Flow', () => {
 
     // ===== TEST 5: MULTIPLE ROLE DETAIL REQUESTS =====
     console.log('🧪 Testing multiple role detail requests...');
-    
+
     // Create multiple roles
     const roles = ['Role 1', 'Role 2', 'Role 3'];
     const roleIds: number[] = [];
@@ -130,7 +132,7 @@ describe('Detail Role Business Flow', () => {
         .post(baseUrlTest)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          name: roleName
+          name: roleName,
         });
 
       expect(multiCreateResponse.status).toBe(200);
@@ -150,13 +152,13 @@ describe('Detail Role Business Flow', () => {
 
     // ===== TEST 6: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     // Create a role for structure test
     const structureCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Test Role Structure'
+        name: 'Test Role Structure',
       });
 
     expect(structureCreateResponse.status).toBe(200);

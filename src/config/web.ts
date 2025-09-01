@@ -17,7 +17,10 @@ web.use((req, res, next) => {
   const origin = req.headers.origin;
 
   res.header('Access-Control-Allow-Origin', origin);
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header(
+    'Access-Control-Allow-Methods',
+    'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  );
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');
 
@@ -27,8 +30,7 @@ web.use((req, res, next) => {
   }
 
   next();
-
-})
+});
 
 web.use(limiter);
 web.use(mainRouter);

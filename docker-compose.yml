@@ -3,7 +3,6 @@ version: '3.8'
 services:
   project_be_app_management:
     container_name: project_be_app_management
-    restart: always
     build: .
     expose:
       - "3000"
@@ -25,7 +24,6 @@ services:
   db:
     image: postgres:17.2
     container_name: postgresrbac
-    restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -40,7 +38,6 @@ services:
   be_app_management_nginx:
     image: nginx:1.27.3-alpine-slim
     container_name: be_app_management_nginx
-    restart: always
     ports:
       - "3000:80"  # Akses aplikasi di http://localhost:3000
     volumes:

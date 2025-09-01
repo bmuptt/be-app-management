@@ -35,14 +35,14 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL MENU DELETE =====
     console.log('🧪 Testing successful menu delete...');
-    
+
     // Create a test menu first
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'test-menu',
-        name: 'Test Menu'
+        name: 'Test Menu',
       });
 
     expect(createResponse.status).toBe(200);
@@ -59,37 +59,41 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT MENU ID =====
     console.log('🧪 Testing non-existent menu ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .delete(`${baseUrlTest}/999999`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain("The menu does not exist!");
+    expect(nonExistentResponse.body.errors).toContain(
+      'The menu does not exist!',
+    );
 
     // ===== TEST 3: NEGATIVE MENU ID =====
     console.log('🧪 Testing negative menu ID...');
-    
+
     const negativeIdResponse = await supertest(web)
       .delete(`${baseUrlTest}/-1`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(negativeIdResponse.status).toBe(404);
-    expect(negativeIdResponse.body.errors).toContain("The menu does not exist!");
+    expect(negativeIdResponse.body.errors).toContain(
+      'The menu does not exist!',
+    );
 
     // ===== TEST 4: ZERO MENU ID =====
     console.log('🧪 Testing zero menu ID...');
-    
+
     const zeroIdResponse = await supertest(web)
       .delete(`${baseUrlTest}/0`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(zeroIdResponse.status).toBe(404);
-    expect(zeroIdResponse.body.errors).toContain("The menu does not exist!");
+    expect(zeroIdResponse.body.errors).toContain('The menu does not exist!');
 
     // ===== TEST 5: VERY LARGE MENU ID =====
     console.log('🧪 Testing very large menu ID...');
-    
+
     const largeIdResponse = await supertest(web)
       .delete(`${baseUrlTest}/999999999999`)
       .set('Cookie', cookieHeader ?? '');
@@ -99,7 +103,7 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 6: DECIMAL MENU ID =====
     console.log('🧪 Testing decimal menu ID...');
-    
+
     const decimalIdResponse = await supertest(web)
       .delete(`${baseUrlTest}/1.5`)
       .set('Cookie', cookieHeader ?? '');
@@ -109,7 +113,7 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 7: INVALID MENU ID FORMAT =====
     console.log('🧪 Testing invalid menu ID format...');
-    
+
     const invalidIdResponse = await supertest(web)
       .delete(`${baseUrlTest}/invalid`)
       .set('Cookie', cookieHeader ?? '');
@@ -119,14 +123,14 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 8: DELETE MENU WITH SUBMENUS =====
     console.log('🧪 Testing delete menu with submenus...');
-    
+
     // Create a parent menu
     const parentResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-menu',
-        name: 'Parent Menu'
+        name: 'Parent Menu',
       });
 
     expect(parentResponse.status).toBe(200);
@@ -139,7 +143,7 @@ describe('Menu Delete Business Flow', () => {
       .send({
         key_menu: 'submenu',
         name: 'Submenu',
-        menu_id: parentId
+        menu_id: parentId,
       });
 
     expect(submenuResponse.status).toBe(200);
@@ -154,14 +158,14 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 9: RESPONSE STRUCTURE VALIDATION =====
     console.log('🧪 Testing response structure validation...');
-    
+
     // Create a test menu for structure validation
     const structureMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'structure-menu',
-        name: 'Structure Menu'
+        name: 'Structure Menu',
       });
 
     expect(structureMenuResponse.status).toBe(200);
@@ -185,14 +189,14 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 10: MULTIPLE DELETE REQUESTS FOR SAME MENU =====
     console.log('🧪 Testing multiple delete requests for same menu...');
-    
+
     // Create a test menu for multiple delete requests
     const multipleMenuResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'multiple-menu',
-        name: 'Multiple Menu'
+        name: 'Multiple Menu',
       });
 
     expect(multipleMenuResponse.status).toBe(200);
@@ -220,31 +224,37 @@ describe('Menu Delete Business Flow', () => {
 
     // ===== TEST 11: CONCURRENT DELETE REQUESTS =====
     console.log('🧪 Testing concurrent delete requests...');
-    
+
     // Create multiple menus for concurrent deletion
-    const concurrentMenuPromises = Array(3).fill(null).map((_, index) =>
-      supertest(web)
-        .post(baseUrlTest)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          key_menu: `concurrent-menu-${index + 1}`,
-          name: `Concurrent Menu ${index + 1}`
-        })
-    );
+    const concurrentMenuPromises = Array(3)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .post(baseUrlTest)
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            key_menu: `concurrent-menu-${index + 1}`,
+            name: `Concurrent Menu ${index + 1}`,
+          }),
+      );
 
     const concurrentCreateResponses = await Promise.all(concurrentMenuPromises);
-    const menuIds = concurrentCreateResponses.map(response => response.body.data.id);
-
-    // Delete all menus concurrently
-    const concurrentDeletePromises = menuIds.map(menuId =>
-      supertest(web)
-        .delete(`${baseUrlTest}/${menuId}`)
-        .set('Cookie', cookieHeader ?? '')
+    const menuIds = concurrentCreateResponses.map(
+      (response) => response.body.data.id,
     );
 
-    const concurrentDeleteResponses = await Promise.all(concurrentDeletePromises);
+    // Delete all menus concurrently
+    const concurrentDeletePromises = menuIds.map((menuId) =>
+      supertest(web)
+        .delete(`${baseUrlTest}/${menuId}`)
+        .set('Cookie', cookieHeader ?? ''),
+    );
 
-    concurrentDeleteResponses.forEach(response => {
+    const concurrentDeleteResponses = await Promise.all(
+      concurrentDeletePromises,
+    );
+
+    concurrentDeleteResponses.forEach((response) => {
       expect(response.status).toBe(200);
       expect(response.body.data.active).toBe('Inactive');
     });

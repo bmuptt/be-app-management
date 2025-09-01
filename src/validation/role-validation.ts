@@ -13,7 +13,7 @@ const baseSchema = z.object({
 export const validateStoreRole = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const payload = baseSchema.parse(req.body);
@@ -37,7 +37,7 @@ export const validateStoreRole = async (
 export const validateUpdateRole = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const payload = baseSchema.parse(req.body);
@@ -66,7 +66,7 @@ export const validateUpdateRole = async (
 export const validateDeleteRole = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const dataExist = await RoleService.detail(parseInt(req.params.id));

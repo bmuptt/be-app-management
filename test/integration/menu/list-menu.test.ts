@@ -35,7 +35,7 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 1: LIST ROOT MENUS (id=0) =====
     console.log('🧪 Testing list root menus...');
-    
+
     const rootResponse = await supertest(web)
       .get(`${baseUrlTest}/0`)
       .set('Cookie', cookieHeader ?? '');
@@ -44,7 +44,7 @@ describe('List Menu Business Flow', () => {
     expect(rootResponse.body).toHaveProperty('data');
     expect(Array.isArray(rootResponse.body.data)).toBe(true);
     expect(rootResponse.body.data.length).toBeGreaterThan(0);
-    
+
     // Check if menus have children property
     if (rootResponse.body.data.length > 0) {
       expect(rootResponse.body.data[0]).toHaveProperty('children');
@@ -53,14 +53,14 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 2: LIST SUBMENUS FOR EXISTING PARENT =====
     console.log('🧪 Testing list submenus for existing parent...');
-    
+
     // First create a parent menu
     const parentResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'parent-menu',
-        name: 'Parent Menu'
+        name: 'Parent Menu',
       });
 
     expect(parentResponse.status).toBe(200);
@@ -73,7 +73,7 @@ describe('List Menu Business Flow', () => {
       .send({
         key_menu: 'submenu1',
         name: 'Submenu 1',
-        menu_id: parentId
+        menu_id: parentId,
       });
 
     expect(submenu1Response.status).toBe(200);
@@ -84,7 +84,7 @@ describe('List Menu Business Flow', () => {
       .send({
         key_menu: 'submenu2',
         name: 'Submenu 2',
-        menu_id: parentId
+        menu_id: parentId,
       });
 
     expect(submenu2Response.status).toBe(200);
@@ -101,7 +101,7 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 3: RETURN EMPTY ARRAY FOR NON-EXISTENT PARENT =====
     console.log('🧪 Testing list for non-existent parent...');
-    
+
     const nonExistentResponse = await supertest(web)
       .get(`${baseUrlTest}/999999`)
       .set('Cookie', cookieHeader ?? '');
@@ -112,7 +112,7 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 4: LIST WITH QUERY PARAMETERS =====
     console.log('🧪 Testing list with query parameters...');
-    
+
     const queryResponse = await supertest(web)
       .get(`${baseUrlTest}/0?include=children&limit=5`)
       .set('Cookie', cookieHeader ?? '');
@@ -123,7 +123,7 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 5: LIST WITH INVALID PARENT ID FORMAT =====
     console.log('🧪 Testing list with invalid parent ID format...');
-    
+
     const invalidIdResponse = await supertest(web)
       .get(`${baseUrlTest}/invalid-id`)
       .set('Cookie', cookieHeader ?? '');
@@ -135,7 +135,7 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 6: LIST WITH NEGATIVE PARENT ID =====
     console.log('🧪 Testing list with negative parent ID...');
-    
+
     const negativeIdResponse = await supertest(web)
       .get(`${baseUrlTest}/-1`)
       .set('Cookie', cookieHeader ?? '');
@@ -147,14 +147,14 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 7: LIST WITH DEEP NESTED STRUCTURE =====
     console.log('🧪 Testing list with deep nested structure...');
-    
+
     // Create a deep nested structure
     const level1Response = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
         key_menu: 'level1',
-        name: 'Level 1 Menu'
+        name: 'Level 1 Menu',
       });
 
     expect(level1Response.status).toBe(200);
@@ -166,7 +166,7 @@ describe('List Menu Business Flow', () => {
       .send({
         key_menu: 'level2',
         name: 'Level 2 Menu',
-        menu_id: level1Id
+        menu_id: level1Id,
       });
 
     expect(level2Response.status).toBe(200);
@@ -178,7 +178,7 @@ describe('List Menu Business Flow', () => {
       .send({
         key_menu: 'level3',
         name: 'Level 3 Menu',
-        menu_id: level2Id
+        menu_id: level2Id,
       });
 
     expect(level3Response.status).toBe(200);
@@ -194,20 +194,22 @@ describe('List Menu Business Flow', () => {
 
     // ===== TEST 8: LIST WITH LARGE NUMBER OF MENUS =====
     console.log('🧪 Testing list with large number of menus...');
-    
+
     // Create multiple menus under root
-    const largeMenuPromises = Array(5).fill(null).map((_, index) =>
-      supertest(web)
-        .post(baseUrlTest)
-        .set('Cookie', cookieHeader ?? '')
-        .send({
-          key_menu: `large-menu-${index + 1}`,
-          name: `Large Menu ${index + 1}`
-        })
-    );
+    const largeMenuPromises = Array(5)
+      .fill(null)
+      .map((_, index) =>
+        supertest(web)
+          .post(baseUrlTest)
+          .set('Cookie', cookieHeader ?? '')
+          .send({
+            key_menu: `large-menu-${index + 1}`,
+            name: `Large Menu ${index + 1}`,
+          }),
+      );
 
     const largeMenuResponses = await Promise.all(largeMenuPromises);
-    largeMenuResponses.forEach(response => {
+    largeMenuResponses.forEach((response) => {
       expect(response.status).toBe(200);
     });
 

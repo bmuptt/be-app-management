@@ -35,7 +35,7 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 1: SUCCESSFUL USER UPDATE =====
     console.log('🧪 Testing successful user update...');
-    
+
     // First create a new user to update
     const createResponse = await supertest(web)
       .post(baseUrlTest)
@@ -45,7 +45,7 @@ describe('Update User Business Flow', () => {
         name: 'Test User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(createResponse.status).toBe(200);
@@ -56,7 +56,7 @@ describe('Update User Business Flow', () => {
       name: 'Updated User',
       gender: 'Female',
       birthdate: '1995-06-15',
-      role_id: 1
+      role_id: 1,
     };
 
     const response = await supertest(web)
@@ -74,22 +74,32 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 2: VALIDATION ERRORS FOR MISSING REQUIRED FIELDS =====
     console.log('🧪 Testing validation errors for missing required fields...');
-    
+
     const missingFieldsResponse = await supertest(web)
       .patch(`${baseUrlTest}/2`)
       .set('Cookie', cookieHeader ?? '')
       .send({});
 
     expect(missingFieldsResponse.status).toBe(400);
-    expect(missingFieldsResponse.body.errors).toContain('The email is required!');
-    expect(missingFieldsResponse.body.errors).toContain('The name is required!');
-    expect(missingFieldsResponse.body.errors).toContain('The gender is required!');
-    expect(missingFieldsResponse.body.errors).toContain('The birthdate is required!');
-    expect(missingFieldsResponse.body.errors).toContain('The role is required!');
+    expect(missingFieldsResponse.body.errors).toContain(
+      'The email is required!',
+    );
+    expect(missingFieldsResponse.body.errors).toContain(
+      'The name is required!',
+    );
+    expect(missingFieldsResponse.body.errors).toContain(
+      'The gender is required!',
+    );
+    expect(missingFieldsResponse.body.errors).toContain(
+      'The birthdate is required!',
+    );
+    expect(missingFieldsResponse.body.errors).toContain(
+      'The role is required!',
+    );
 
     // ===== TEST 3: VALIDATION ERRORS FOR INVALID EMAIL FORMAT =====
     console.log('🧪 Testing validation errors for invalid email format...');
-    
+
     const emailTestCases = [
       { email: 'invalid-email', expectedError: 'Invalid email' },
       { email: 'test@', expectedError: 'Invalid email' },
@@ -107,7 +117,7 @@ describe('Update User Business Flow', () => {
           name: 'Test User',
           gender: 'Male',
           birthdate: '1990-01-01',
-          role_id: 1
+          role_id: 1,
         });
 
       expect(emailResponse.status).toBe(400);
@@ -116,13 +126,28 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 4: VALIDATION ERRORS FOR INVALID BIRTHDATE FORMAT =====
     console.log('🧪 Testing validation errors for invalid birthdate format...');
-    
+
     const birthdateTestCases = [
-      { birthdate: 'invalid-date', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990/01/01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '01-01-1990', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-13-01', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
-      { birthdate: '1990-01-32', expectedError: 'The birthdate format must be: YYYY-MM-DD!' },
+      {
+        birthdate: 'invalid-date',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990/01/01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '01-01-1990',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-13-01',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
+      {
+        birthdate: '1990-01-32',
+        expectedError: 'The birthdate format must be: YYYY-MM-DD!',
+      },
     ];
 
     for (const testCase of birthdateTestCases) {
@@ -134,7 +159,7 @@ describe('Update User Business Flow', () => {
           name: 'Test User',
           gender: 'Male',
           birthdate: testCase.birthdate,
-          role_id: 1
+          role_id: 1,
         });
 
       expect(birthdateResponse.status).toBe(400);
@@ -143,7 +168,7 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 5: DUPLICATE EMAIL ERROR =====
     console.log('🧪 Testing duplicate email error...');
-    
+
     // Create first user
     const firstUserResponse = await supertest(web)
       .post(baseUrlTest)
@@ -153,7 +178,7 @@ describe('Update User Business Flow', () => {
         name: 'First User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(firstUserResponse.status).toBe(200);
@@ -168,7 +193,7 @@ describe('Update User Business Flow', () => {
         name: 'Second User',
         gender: 'Female',
         birthdate: '1995-05-05',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(secondUserResponse.status).toBe(200);
@@ -183,15 +208,17 @@ describe('Update User Business Flow', () => {
         name: 'Second User',
         gender: 'Female',
         birthdate: '1995-05-05',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(duplicateResponse.status).toBe(400);
-    expect(duplicateResponse.body.errors).toContain('The email cannot be the same!');
+    expect(duplicateResponse.body.errors).toContain(
+      'The email cannot be the same!',
+    );
 
     // ===== TEST 6: NON-EXISTENT USER ID =====
     console.log('🧪 Testing non-existent user ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .patch(`${baseUrlTest}/999`)
       .set('Cookie', cookieHeader ?? '')
@@ -200,15 +227,17 @@ describe('Update User Business Flow', () => {
         name: 'Test User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain('The user does not exist!');
+    expect(nonExistentResponse.body.errors).toContain(
+      'The user does not exist!',
+    );
 
     // ===== TEST 7: INVALID USER ID FORMAT =====
     console.log('🧪 Testing invalid user ID format...');
-    
+
     const invalidFormatResponse = await supertest(web)
       .patch(`${baseUrlTest}/invalid`)
       .set('Cookie', cookieHeader ?? '')
@@ -217,7 +246,7 @@ describe('Update User Business Flow', () => {
         name: 'Test User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(invalidFormatResponse.status).toBe(500);
@@ -225,7 +254,7 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 8: DIFFERENT GENDER VALUES =====
     console.log('🧪 Testing different gender values...');
-    
+
     const genderTestCases = [
       { gender: 'Male', name: 'Male User' },
       { gender: 'Female', name: 'Female User' },
@@ -240,7 +269,7 @@ describe('Update User Business Flow', () => {
           name: testCase.name,
           gender: testCase.gender,
           birthdate: '1990-01-01',
-          role_id: 1
+          role_id: 1,
         });
 
       expect(genderResponse.status).toBe(200);
@@ -250,7 +279,7 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 9: VARIOUS VALID BIRTHDATE FORMATS =====
     console.log('🧪 Testing various valid birthdate formats...');
-    
+
     const birthdateValidTestCases = [
       { birthdate: '1990-01-01', name: 'User1990' },
       { birthdate: '2000-12-31', name: 'User2000' },
@@ -267,17 +296,19 @@ describe('Update User Business Flow', () => {
           name: testCase.name,
           gender: 'Male',
           birthdate: testCase.birthdate,
-          role_id: 1
+          role_id: 1,
         });
 
       expect(birthdateValidResponse.status).toBe(200);
-      expect(birthdateValidResponse.body.data.birthdate).toContain(testCase.birthdate);
+      expect(birthdateValidResponse.body.data.birthdate).toContain(
+        testCase.birthdate,
+      );
       expect(birthdateValidResponse.body.data.name).toBe(testCase.name);
     }
 
     // ===== TEST 10: SPECIAL CHARACTERS IN NAME FIELD =====
     console.log('🧪 Testing special characters in name field...');
-    
+
     const specialCharTestCases = [
       { name: 'John-Doe', gender: 'Male' },
       { name: "O'Connor", gender: 'Male' },
@@ -293,7 +324,7 @@ describe('Update User Business Flow', () => {
           name: testCase.name,
           gender: testCase.gender,
           birthdate: '1990-01-01',
-          role_id: 1
+          role_id: 1,
         });
 
       expect(specialCharResponse.status).toBe(200);
@@ -303,7 +334,7 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 11: USER UPDATE WITH EXTRA FIELDS =====
     console.log('🧪 Testing user update with extra fields...');
-    
+
     const extraFieldsData = {
       email: 'first@example.com',
       name: 'Test User',
@@ -312,7 +343,7 @@ describe('Update User Business Flow', () => {
       role_id: 1,
       extra_field: 'should be ignored',
       another_field: 123,
-      nested_field: { key: 'value' }
+      nested_field: { key: 'value' },
     };
 
     const extraFieldsResponse = await supertest(web)
@@ -330,7 +361,7 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 12: DIFFERENT ROLE ASSIGNMENTS =====
     console.log('🧪 Testing different role assignments...');
-    
+
     const roleTestCases = [
       { role_id: 1, name: 'Role1User' },
       { role_id: 1, name: 'Role1User2' }, // Same role, different user
@@ -345,7 +376,7 @@ describe('Update User Business Flow', () => {
           name: testCase.name,
           gender: 'Male',
           birthdate: '1990-01-01',
-          role_id: testCase.role_id
+          role_id: testCase.role_id,
         });
 
       expect(roleResponse.status).toBe(200);
@@ -355,7 +386,7 @@ describe('Update User Business Flow', () => {
 
     // ===== TEST 13: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     const structureResponse = await supertest(web)
       .patch(`${baseUrlTest}/${firstUserId}`)
       .set('Cookie', cookieHeader ?? '')
@@ -364,7 +395,7 @@ describe('Update User Business Flow', () => {
         name: 'Structure Test User',
         gender: 'Male',
         birthdate: '1990-01-01',
-        role_id: 1
+        role_id: 1,
       });
 
     expect(structureResponse.status).toBe(200);

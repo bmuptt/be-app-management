@@ -34,13 +34,13 @@ describe('Delete Role Business Flow', () => {
     jest.setTimeout(30000);
     // ===== TEST 1: SUCCESSFUL ROLE DELETE =====
     console.log('🧪 Testing successful role delete...');
-    
+
     // First create a role
     const createResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Role to Delete'
+        name: 'Role to Delete',
       });
 
     expect(createResponse.status).toBe(200);
@@ -67,17 +67,19 @@ describe('Delete Role Business Flow', () => {
 
     // ===== TEST 2: NON-EXISTENT ROLE ID =====
     console.log('🧪 Testing non-existent role ID...');
-    
+
     const nonExistentResponse = await supertest(web)
       .delete(`${baseUrlTest}/999999`)
       .set('Cookie', cookieHeader ?? '');
 
     expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain('The role does not exist!');
+    expect(nonExistentResponse.body.errors).toContain(
+      'The role does not exist!',
+    );
 
     // ===== TEST 3: INVALID ROLE ID FORMAT =====
     console.log('🧪 Testing invalid role ID format...');
-    
+
     const invalidFormatResponse = await supertest(web)
       .delete(`${baseUrlTest}/invalid`)
       .set('Cookie', cookieHeader ?? '');
@@ -88,7 +90,7 @@ describe('Delete Role Business Flow', () => {
 
     // ===== TEST 4: EDGE CASES =====
     console.log('🧪 Testing edge cases...');
-    
+
     // Negative role ID
     const negativeResponse = await supertest(web)
       .delete(`${baseUrlTest}/-1`)
@@ -125,7 +127,7 @@ describe('Delete Role Business Flow', () => {
 
     // ===== TEST 5: MULTIPLE ROLE DELETIONS =====
     console.log('🧪 Testing multiple role deletions...');
-    
+
     // Create multiple roles
     const roles = ['Role 1', 'Role 2', 'Role 3'];
     const roleIds: number[] = [];
@@ -135,7 +137,7 @@ describe('Delete Role Business Flow', () => {
         .post(baseUrlTest)
         .set('Cookie', cookieHeader ?? '')
         .send({
-          name: roleName
+          name: roleName,
         });
 
       expect(multiCreateResponse.status).toBe(200);
@@ -149,7 +151,9 @@ describe('Delete Role Business Flow', () => {
         .set('Cookie', cookieHeader ?? '');
 
       expect(multiDeleteResponse.status).toBe(200);
-      expect(multiDeleteResponse.body.message).toBe('Success to delete data role.');
+      expect(multiDeleteResponse.body.message).toBe(
+        'Success to delete data role.',
+      );
       expect(multiDeleteResponse.body.data.id).toBe(roleId);
     }
 
@@ -164,13 +168,13 @@ describe('Delete Role Business Flow', () => {
 
     // ===== TEST 6: DELETE ALREADY DELETED ROLE =====
     console.log('🧪 Testing delete already deleted role...');
-    
+
     // Create a role for double delete test
     const doubleCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Role to Delete Twice'
+        name: 'Role to Delete Twice',
       });
 
     expect(doubleCreateResponse.status).toBe(200);
@@ -189,17 +193,19 @@ describe('Delete Role Business Flow', () => {
       .set('Cookie', cookieHeader ?? '');
 
     expect(doubleDeleteResponse2.status).toBe(404);
-    expect(doubleDeleteResponse2.body.errors).toContain('The role does not exist!');
+    expect(doubleDeleteResponse2.body.errors).toContain(
+      'The role does not exist!',
+    );
 
     // ===== TEST 7: SPECIAL CHARACTERS =====
     console.log('🧪 Testing special characters...');
-    
+
     // Create a role with special characters
     const specialCharCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Role with @#$%^&*()_+-=[]{}|;:,.<>?'
+        name: 'Role with @#$%^&*()_+-=[]{}|;:,.<>?',
       });
 
     expect(specialCharCreateResponse.status).toBe(200);
@@ -211,14 +217,16 @@ describe('Delete Role Business Flow', () => {
       .set('Cookie', cookieHeader ?? '');
 
     expect(specialCharResponse.status).toBe(200);
-    expect(specialCharResponse.body.data.name).toBe('Role with @#$%^&*()_+-=[]{}|;:,.<>?');
+    expect(specialCharResponse.body.data.name).toBe(
+      'Role with @#$%^&*()_+-=[]{}|;:,.<>?',
+    );
 
     // Unicode characters
     const unicodeCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Rôle avec caractères spéciaux 角色 役割'
+        name: 'Rôle avec caractères spéciaux 角色 役割',
       });
 
     expect(unicodeCreateResponse.status).toBe(200);
@@ -230,18 +238,20 @@ describe('Delete Role Business Flow', () => {
       .set('Cookie', cookieHeader ?? '');
 
     expect(unicodeResponse.status).toBe(200);
-    expect(unicodeResponse.body.data.name).toBe('Rôle avec caractères spéciaux 角色 役割');
+    expect(unicodeResponse.body.data.name).toBe(
+      'Rôle avec caractères spéciaux 角色 役割',
+    );
 
     // ===== TEST 8: EDGE CASES WITH SPECIAL NAMES =====
     console.log('🧪 Testing edge cases with special names...');
-    
+
     // Very long name
     const longName = 'A'.repeat(255); // Maximum allowed length
     const longNameCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: longName
+        name: longName,
       });
 
     expect(longNameCreateResponse.status).toBe(200);
@@ -260,7 +270,7 @@ describe('Delete Role Business Flow', () => {
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: '   '
+        name: '   ',
       });
 
     expect(whitespaceCreateResponse.status).toBe(200);
@@ -276,13 +286,13 @@ describe('Delete Role Business Flow', () => {
 
     // ===== TEST 9: RESPONSE STRUCTURE =====
     console.log('🧪 Testing response structure...');
-    
+
     // Create a role for structure test
     const structureCreateResponse = await supertest(web)
       .post(baseUrlTest)
       .set('Cookie', cookieHeader ?? '')
       .send({
-        name: 'Role for Structure Test'
+        name: 'Role for Structure Test',
       });
 
     expect(structureCreateResponse.status).toBe(200);

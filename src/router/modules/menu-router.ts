@@ -1,5 +1,11 @@
 import express from 'express';
-import { validateChangeParent, validateDeleteMenu, validateSortMenu, validateStoreMenu, validateUpdateMenu } from '../../validation/menu-validation';
+import {
+  validateChangeParent,
+  validateDeleteMenu,
+  validateSortMenu,
+  validateStoreMenu,
+  validateUpdateMenu,
+} from '../../validation/menu-validation';
 import { MenuController } from '../../controller/menu-controller';
 
 export const menuRouter = express.Router();
@@ -11,7 +17,11 @@ menuRouter.get('/:id/detail', MenuController.detail);
 menuRouter.get('/:id/list-header', MenuController.listHeader);
 menuRouter.post('/', validateStoreMenu, MenuController.store);
 menuRouter.post('/sort/:id', validateSortMenu, MenuController.sort);
-menuRouter.post('/change-parent/:id', validateChangeParent, MenuController.changeParent);
+menuRouter.post(
+  '/change-parent/:id',
+  validateChangeParent,
+  MenuController.changeParent,
+);
 menuRouter.patch('/:id', validateUpdateMenu, MenuController.update);
 menuRouter.delete('/:id', validateDeleteMenu, MenuController.destroy);
 menuRouter.put('/active/:id', validateDeleteMenu, MenuController.active);

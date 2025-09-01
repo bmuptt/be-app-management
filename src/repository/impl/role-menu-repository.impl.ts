@@ -1,13 +1,13 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prismaClient } from '../../config/database';
 import { IRoleMenuRepository } from '../contract/role-menu-repository.contract';
-import { 
-  IRoleMenuObject, 
-  IRoleMenuCreateData, 
+import {
+  IRoleMenuObject,
+  IRoleMenuCreateData,
   IRoleMenuUpdateData,
   IRoleMenuUpsertData,
   IRoleMenuPerm,
-  IMenuWithPerm
+  IMenuWithPerm,
 } from '../../model/role-menu-model';
 
 export class RoleMenuRepository implements IRoleMenuRepository {
@@ -23,7 +23,10 @@ export class RoleMenuRepository implements IRoleMenuRepository {
     });
   }
 
-  async findUnique(roleId: number, menuId: number): Promise<IRoleMenuObject | null> {
+  async findUnique(
+    roleId: number,
+    menuId: number,
+  ): Promise<IRoleMenuObject | null> {
     return await prismaClient.roleMenu.findUnique({
       where: {
         role_id_menu_id: { role_id: roleId, menu_id: menuId },
@@ -47,7 +50,11 @@ export class RoleMenuRepository implements IRoleMenuRepository {
     });
   }
 
-  async update(roleId: number, menuId: number, data: IRoleMenuUpdateData): Promise<IRoleMenuObject> {
+  async update(
+    roleId: number,
+    menuId: number,
+    data: IRoleMenuUpdateData,
+  ): Promise<IRoleMenuObject> {
     return await prismaClient.roleMenu.update({
       where: {
         role_id_menu_id: { role_id: roleId, menu_id: menuId },

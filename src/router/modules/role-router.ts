@@ -1,5 +1,9 @@
 import express from 'express';
-import { validateDeleteRole, validateStoreRole, validateUpdateRole } from '../../validation/role-validation';
+import {
+  validateDeleteRole,
+  validateStoreRole,
+  validateUpdateRole,
+} from '../../validation/role-validation';
 import { RoleController } from '../../controller/role-controller';
 
 export const roleRouter = express.Router();

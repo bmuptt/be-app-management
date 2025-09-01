@@ -26,7 +26,7 @@ describe('Get Profile Business Flow', () => {
     jest.setTimeout(30000);
     // ===== TEST 1: BASIC PROFILE RETRIEVAL =====
     console.log('🧪 Testing basic profile retrieval...');
-    
+
     const loginResponse = await AuthLogic.getLoginSuperAdmin();
     expect(loginResponse.status).toBe(200);
 
@@ -40,12 +40,14 @@ describe('Get Profile Business Flow', () => {
     expect(basicProfileResponse.status).toBe(200);
     expect(basicProfileResponse.body.profile).toBeDefined();
     expect(basicProfileResponse.body.menu).toBeDefined();
-    expect(basicProfileResponse.body.profile.email).toBe(process.env.EMAIL_ADMIN);
+    expect(basicProfileResponse.body.profile.email).toBe(
+      process.env.EMAIL_ADMIN,
+    );
     expect(basicProfileResponse.body.profile.password).toBeUndefined();
 
     // ===== TEST 2: PROFILE DATA STRUCTURE =====
     console.log('🧪 Testing profile data structure...');
-    
+
     expect(basicProfileResponse.body.profile).toHaveProperty('id');
     expect(basicProfileResponse.body.profile).toHaveProperty('email');
     expect(basicProfileResponse.body.profile).toHaveProperty('name');
@@ -58,14 +60,14 @@ describe('Get Profile Business Flow', () => {
 
     // ===== TEST 3: MENU DATA VALIDATION =====
     console.log('🧪 Testing menu data validation...');
-    
+
     expect(basicProfileResponse.body.menu).toBeDefined();
     expect(Array.isArray(basicProfileResponse.body.menu)).toBe(true);
     expect(basicProfileResponse.body.menu.length).toBeGreaterThan(0);
 
     // ===== TEST 4: COMPLEX MENU HIERARCHY =====
     console.log('🧪 Testing complex menu hierarchy...');
-    
+
     // Create submenus
     await supertest(web)
       .post(baseUrlMenuTest)
@@ -109,12 +111,7 @@ describe('Get Profile Business Flow', () => {
       .post(`${baseUrlMenuTest}/sort/1`)
       .set('Cookie', cookieHeader)
       .send({
-        list_menu: [
-          { id: 3 },
-          { id: 2 },
-          { id: 4 },
-          { id: 5 },
-        ],
+        list_menu: [{ id: 3 }, { id: 2 }, { id: 4 }, { id: 5 }],
       });
 
     const complexMenuResponse = await supertest(web)
@@ -123,12 +120,16 @@ describe('Get Profile Business Flow', () => {
 
     expect(complexMenuResponse.status).toBe(200);
     expect(complexMenuResponse.body.menu[0].children.length).toBe(4);
-    expect(complexMenuResponse.body.menu[0].children[0].children.length).toBe(1);
-    expect(complexMenuResponse.body.menu[0].children[1].children.length).toBe(0);
+    expect(complexMenuResponse.body.menu[0].children[0].children.length).toBe(
+      1,
+    );
+    expect(complexMenuResponse.body.menu[0].children[1].children.length).toBe(
+      0,
+    );
 
     // ===== TEST 5: DIFFERENT ACCESS LEVELS =====
     console.log('🧪 Testing different access levels...');
-    
+
     // Create menu with different access levels
     await supertest(web)
       .post(baseUrlMenuTest)
@@ -161,13 +162,13 @@ describe('Get Profile Business Flow', () => {
 
     // ===== TEST 6: CONCURRENT REQUESTS =====
     console.log('🧪 Testing concurrent requests...');
-    
+
     // Make multiple concurrent requests
-    const promises = Array(3).fill(null).map(() =>
-      supertest(web)
-        .get('/api/profile')
-        .set('Cookie', cookieHeader)
-    );
+    const promises = Array(3)
+      .fill(null)
+      .map(() =>
+        supertest(web).get('/api/profile').set('Cookie', cookieHeader),
+      );
 
     const concurrentResponses = await Promise.all(promises);
 
@@ -179,7 +180,7 @@ describe('Get Profile Business Flow', () => {
 
     // ===== TEST 7: QUERY PARAMETERS =====
     console.log('🧪 Testing query parameters...');
-    
+
     const queryParamResponse = await supertest(web)
       .get('/api/profile?include=extra&data=test')
       .set('Cookie', cookieHeader);
