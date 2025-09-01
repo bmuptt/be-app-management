@@ -49,4 +49,6 @@ export interface IMenuRepository {
   deleteWithTransaction(id: number, updatedBy: number): Promise<IMenuObject>;
 
   deleteRoleMenus(menuId: number): Promise<void>;
+
+  hardDelete(id: number): Promise<IMenuObject>;
 }

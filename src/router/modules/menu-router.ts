@@ -2,6 +2,7 @@ import express from 'express';
 import {
   validateChangeParent,
   validateDeleteMenu,
+  validateHardDeleteMenu,
   validateSortMenu,
   validateStoreMenu,
   validateUpdateMenu,
@@ -24,4 +25,5 @@ menuRouter.post(
 );
 menuRouter.patch('/:id', validateUpdateMenu, MenuController.update);
 menuRouter.delete('/:id', validateDeleteMenu, MenuController.destroy);
+menuRouter.delete('/:id/hard', validateHardDeleteMenu, MenuController.hardDelete);
 menuRouter.put('/active/:id', validateDeleteMenu, MenuController.active);

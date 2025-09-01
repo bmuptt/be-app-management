@@ -191,3 +191,41 @@ export const validateDeleteMenu = async (
     next(e);
   }
 };
+
+export const validateHardDeleteMenu = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const menuId = parseInt(req.params.id);
+    if (isNaN(menuId)) {
+      return next(new ResponseError(400, ['Invalid menu ID!']));
+    }
+
+    // Check if menu exists
+    const menu = await prismaClient.menu.findUnique({
+      where: { id: menuId },
+    });
+    
+    if (!menu) {
+      return next(new ResponseError(404, ['The menu does not exist!']));
+    }
+
+    // Check if menu has children
+    const menuWithChildren = await prismaClient.menu.findUnique({
+      where: { id: menuId },
+      include: {
+        children: true,
+      },
+    });
+
+    if (menuWithChildren && menuWithChildren.children && menuWithChildren.children.length > 0) {
+      return next(new ResponseError(400, ['Cannot delete menu that has children!']));
+    }
+
+    next();
+  } catch (e) {
+    next(e);
+  }
+};

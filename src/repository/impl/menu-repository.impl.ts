@@ -163,4 +163,18 @@ export class MenuRepository implements IMenuRepository {
       where: { menu_id: menuId },
     });
   }
+
+  async hardDelete(id: number): Promise<IMenuObject> {
+    return await prismaClient.$transaction(async (tx) => {
+      // Delete related role_menu records first
+      await tx.roleMenu.deleteMany({
+        where: { menu_id: id },
+      });
+
+      // Delete the menu
+      return await tx.menu.delete({
+        where: { id },
+      });
+    });
+  }
 }

@@ -14,6 +14,7 @@ import { IUserObject } from '../model/user-model';
 import { IRequestList } from '../model/global-model';
 import { pagination } from '../helper/pagination-helper';
 import { menuRepository } from '../repository';
+import { ResponseError } from '../config/response-error';
 
 export class MenuService {
   static async index(id: number) {
@@ -195,5 +196,9 @@ export class MenuService {
     };
 
     return await menuRepository.updateActive(id, activeData);
+  }
+
+  static async hardDelete(id: number, auth: IUserObject) {
+    return await menuRepository.hardDelete(id);
   }
 }

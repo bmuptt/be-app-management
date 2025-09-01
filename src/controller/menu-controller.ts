@@ -168,4 +168,21 @@ export class MenuController {
       next(e);
     }
   }
+
+  static async hardDelete(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        return next(new ResponseError(401, ['Unauthorized!']));
+      }
+
+      const data = await MenuService.hardDelete(parseInt(req.params.id), req.user);
+
+      res.status(200).json({
+        message: 'Success to permanently delete data menu.',
+        data,
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
 }
