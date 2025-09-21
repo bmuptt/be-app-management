@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { mainRouter } from '../router/main-api';
+import { mainRouter, setupSwaggerOnApp } from '../router/main-api';
 import { errorMiddleware } from '../middleware/error-middleware';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
@@ -7,6 +7,9 @@ import limiter from '../middleware/ratelimiter-middleware';
 
 dotenv.config();
 export const web = express();
+
+// Setup Swagger Documentation
+setupSwaggerOnApp(web);
 
 web.set('trust proxy', 1);
 web.use(cookieParser());

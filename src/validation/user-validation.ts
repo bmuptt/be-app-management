@@ -19,6 +19,7 @@ const baseSchema = z.object({
     .string({ message: `The birthdate is required!` })
     .date(`The birthdate format must be: YYYY-MM-DD!`),
   role_id: z
+    .coerce
     .number({ message: `The role is required!` })
     .min(1, `The role is required!`),
   // .min(1, `The birthdate is required!`)
@@ -31,12 +32,22 @@ export const validateStoreUser = async (
   next: NextFunction,
 ) => {
   try {
-    baseSchema.parse(req.body);
+    const validatedData = baseSchema.parse(req.body);
+    req.body = validatedData; // Simpan hasil parsing kembali ke req.body
 
     const emailExist = await UserService.detailFromEmail(req.body.email);
 
     if (emailExist) {
       return next(new ResponseError(400, ['The email cannot be the same!']));
+    }
+
+    // Validasi role_id exists
+    const roleExist = await prismaClient.role.findUnique({
+      where: { id: req.body.role_id }
+    });
+
+    if (!roleExist) {
+      return next(new ResponseError(400, ['The role is not found!']));
     }
 
     next();

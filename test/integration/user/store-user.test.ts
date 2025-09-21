@@ -410,7 +410,31 @@ describe('Store User Business Flow', () => {
     expect(queryParamResponse.body.data.email).toBe(queryParamData.email);
     expect(queryParamResponse.body.data.name).toBe(queryParamData.name);
 
-    // ===== TEST 13: DIFFERENT ROLE ASSIGNMENTS =====
+    // ===== TEST 13: ROLE_ID AS STRING (FORM-URLENCODED COMPATIBILITY) =====
+    console.log('🧪 Testing role_id as string (form-urlencoded compatibility)...');
+
+    const stringRoleTestCases = [
+      { role_id: '1', expectedRoleId: 1, name: 'StringRole1User' },
+    ];
+
+    for (const testCase of stringRoleTestCases) {
+      const stringRoleResponse = await supertest(web)
+        .post(baseUrlTest)
+        .set('Cookie', cookieHeader ?? '')
+        .send({
+          email: `test${testCase.name}@example.com`,
+          name: testCase.name,
+          gender: 'Male',
+          birthdate: '1990-01-01',
+          role_id: testCase.role_id, // String value
+        });
+
+      expect(stringRoleResponse.status).toBe(200);
+      expect(stringRoleResponse.body.data.role_id).toBe(testCase.expectedRoleId);
+      expect(stringRoleResponse.body.data.name).toBe(testCase.name);
+    }
+
+    // ===== TEST 14: DIFFERENT ROLE ASSIGNMENTS =====
     console.log('🧪 Testing different role assignments...');
 
     const roleTestCases = [
