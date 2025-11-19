@@ -5,6 +5,7 @@ import {
   IUserWithRole,
   IUserCreateData,
   IUserUpdateData,
+  IUserEmailLookup,
 } from '../../model/user-model';
 import { IRequestList } from '../../model/global-model';
 
@@ -31,4 +32,5 @@ export interface IUserRepository {
     status: string,
     updatedBy: number,
   ): Promise<IUserObject>;
+  findEmailsByIds(ids: number[]): Promise<IUserEmailLookup[]>;
 }

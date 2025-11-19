@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test:local": "dotenv -e .env.test jest -- --runInBand --testTimeout=30000 --verbose",
+    "test:local": "dotenv -e .env.test jest -- --verbose",
     "build": "tsc",
     "start": "nodemon dist/main.js",
     "dev": "ts-node-dev --files --poll src/main.ts",
@@ -13,11 +13,6 @@
     "reset:db": "prisma migrate reset",
     "reset:dbtest": "dotenv -e .env.test npx prisma migrate reset --force",
     "seed:user": "dotenv -e .env ts-node seed/user-seeder.ts"
-  },
-  "jest": {
-    "transform": {
-      "^.+\\.[t|j]sx?$": "babel-jest"
-    }
   },
   "author": "Ardiansyah Pratama",
   "license": "ISC",
@@ -29,7 +24,8 @@
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",
     "date-fns": "^4.1.0",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.6.1",
+    "elastic-apm-node": "^4.14.0",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.2",

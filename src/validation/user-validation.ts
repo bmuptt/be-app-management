@@ -4,6 +4,34 @@ import { prismaClient } from '../config/database';
 import { ResponseError } from '../config/response-error';
 import { UserService } from '../service/user-service';
 
+const getUserEmailsQuerySchema = z.object({
+  ids: z
+    .string({ required_error: 'The ids is required!' })
+    .trim()
+    .min(1, 'The ids is required!')
+    .transform((value) => {
+      const uniqueIds = Array.from(
+        new Set(
+          value
+            .split(',')
+            .map((id) => id.trim())
+            .filter((id) => id.length > 0),
+        ),
+      );
+
+      return uniqueIds.map((id) => Number(id));
+    })
+    .refine((ids) => ids.length > 0, {
+      message: 'The ids is required!',
+    })
+    .refine(
+      (ids) => ids.every((id) => Number.isInteger(id) && id > 0),
+      {
+        message: 'The ids must be positive integers!',
+      },
+    ),
+});
+
 const baseSchema = z.object({
   email: z
     .string({ message: `The email is required!` })
@@ -102,6 +130,21 @@ export const validateResetPasswordUser = async (
     if (!userExist) {
       return next(new ResponseError(404, ['The user does not exist!']));
     }
+
+    next();
+  } catch (e) {
+    next(e);
+  }
+};
+
+export const validateGetUserEmails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { ids } = getUserEmailsQuerySchema.parse(req.query);
+    res.locals.userIds = ids;
 
     next();
   } catch (e) {

@@ -2,181 +2,173 @@ import dotenv from 'dotenv';
 import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
-import { logger } from '../../../src/config/logging';
 
 dotenv.config();
 
 const baseUrlTest = '/api/app-management/user';
 
-describe('Reset Password User Business Flow', () => {
+describe('Reset Password User', () => {
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    // Increase timeout for database operations
-    jest.setTimeout(30000);
-    // Migrate dan seed ulang database untuk setiap test case
     await TestHelper.refreshDatabase();
 
-    const responseLogin = await AuthLogic.getLoginSuperAdmin();
-    expect(responseLogin.status).toBe(200);
-
-    const cookies = responseLogin.headers['set-cookie'];
+    const loginResponse = await AuthLogic.getLoginSuperAdmin();
+    const cookies = loginResponse.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
   });
 
   afterEach(async () => {
-    // Cleanup database setelah test
     await TestHelper.cleanupDatabase();
   });
 
-  it('Should handle complete reset password user flow including validation, edge cases, and response structure', async () => {
-    // Increase timeout for this comprehensive test
-    jest.setTimeout(30000);
+  describe('Authentication', () => {
+    it('should reject reset password request without authentication', async () => {
+      const response = await supertest(web).post(`${baseUrlTest}/reset-password/1`);
 
-    // ===== TEST 1: SUCCESSFUL RESET PASSWORD FOR EXISTING USER =====
-    console.log('🧪 Testing successful reset password for existing user...');
+      expect(response.status).toBe(401);
+    });
+  });
 
-    // Test with seeded admin user (ID: 1)
-    const response = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/1`)
-      .set('Cookie', cookieHeader ?? '');
+  describe('Success Cases', () => {
+    it('should successfully reset password for existing user', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/1`)
+        .set('Cookie', cookieHeader ?? '');
 
-    expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Success to reset password user.');
-    expect(response.body.data).toBeDefined();
-    expect(response.body.data.active).toBe('Inactive');
-    expect(response.body.data.id).toBe(1);
-    expect(response.body.data.updated_by).toBe(1);
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Success to reset password user.');
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.active).toBe('Inactive');
+      expect(response.body.data.id).toBe(1);
+      expect(response.body.data.updated_by).toBe(1);
+    });
 
-    // ===== TEST 2: NON-EXISTENT USER ID =====
-    console.log('🧪 Testing non-existent user ID...');
+    it('should set user status to Inactive after reset', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/1`)
+        .set('Cookie', cookieHeader ?? '');
 
-    const nonExistentResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/999`)
-      .set('Cookie', cookieHeader ?? '');
+      expect(response.status).toBe(200);
+      expect(response.body.data.active).toBe('Inactive');
+    });
 
-    expect(nonExistentResponse.status).toBe(404);
-    expect(nonExistentResponse.body.errors).toContain(
-      'The user does not exist!',
-    );
+    it('should set updated_by to user ID being reset', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/1`)
+        .set('Cookie', cookieHeader ?? '');
 
-    // ===== TEST 3: INVALID USER ID FORMAT =====
-    console.log('🧪 Testing invalid user ID format...');
+      expect(response.status).toBe(200);
+      expect(response.body.data.updated_by).toBe(1);
+    });
 
-    const invalidFormatResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/invalid`)
-      .set('Cookie', cookieHeader ?? '');
+    it('should reset password for newly created user', async () => {
+      // Create user
+      const createResponse = await supertest(web)
+        .post(baseUrlTest)
+        .set('Cookie', cookieHeader ?? '')
+        .send({
+          email: 'newuser@example.com',
+          name: 'New User',
+          gender: 'Male',
+          birthdate: '1990-01-01',
+          role_id: 1,
+        });
 
-    // Invalid ID format causes a 500 error due to NaN being passed to database
-    expect(invalidFormatResponse.status).toBe(500);
+      const userId = createResponse.body.data.id;
 
-    // ===== TEST 4: ZERO USER ID =====
-    console.log('🧪 Testing zero user ID...');
+      // Reset password
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/${userId}`)
+        .set('Cookie', cookieHeader ?? '');
 
-    const zeroResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/0`)
-      .set('Cookie', cookieHeader ?? '');
+      expect(response.status).toBe(200);
+      expect(response.body.data.active).toBe('Inactive');
+      expect(response.body.data.id).toBe(userId);
+      expect(response.body.data.updated_by).toBe(userId);
+    });
+  });
 
-    expect(zeroResponse.status).toBe(404);
-    expect(zeroResponse.body.errors).toContain('The user does not exist!');
+  describe('Error Cases', () => {
+    it('should return 404 for non-existent user ID', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/999`)
+        .set('Cookie', cookieHeader ?? '');
 
-    // ===== TEST 5: NEGATIVE USER ID =====
-    console.log('🧪 Testing negative user ID...');
+      expect(response.status).toBe(404);
+      expect(response.body.errors).toContain('The user does not exist!');
+    });
 
-    const negativeResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/-1`)
-      .set('Cookie', cookieHeader ?? '');
+    it('should return 404 for zero user ID', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/0`)
+        .set('Cookie', cookieHeader ?? '');
 
-    expect(negativeResponse.status).toBe(404);
-    expect(negativeResponse.body.errors).toContain('The user does not exist!');
+      expect(response.status).toBe(404);
+      expect(response.body.errors).toContain('The user does not exist!');
+    });
 
-    // ===== TEST 6: VERY LARGE USER ID =====
-    console.log('🧪 Testing very large user ID...');
+    it('should return 404 for negative user ID', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/-1`)
+        .set('Cookie', cookieHeader ?? '');
 
-    const largeResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/999999999`)
-      .set('Cookie', cookieHeader ?? '');
+      expect(response.status).toBe(404);
+      expect(response.body.errors).toContain('The user does not exist!');
+    });
 
-    expect(largeResponse.status).toBe(404);
-    expect(largeResponse.body.errors).toContain('The user does not exist!');
+    it('should return 404 for very large user ID', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/999999999`)
+        .set('Cookie', cookieHeader ?? '');
 
-    // ===== TEST 7: MULTIPLE RESET PASSWORD REQUESTS FOR SAME USER =====
-    console.log('🧪 Testing multiple reset password requests for same user...');
+      expect(response.status).toBe(404);
+      expect(response.body.errors).toContain('The user does not exist!');
+    });
 
-    // First reset
-    const response1 = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/1`)
-      .set('Cookie', cookieHeader ?? '');
+    it('should return 500 for invalid user ID format', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/invalid`)
+        .set('Cookie', cookieHeader ?? '');
 
-    expect(response1.status).toBe(200);
-    expect(response1.body.data.active).toBe('Inactive');
+      // Invalid ID format akan menyebabkan error di Prisma
+      expect(response.status).toBe(500);
+    });
+  });
 
-    // Second reset (should still work)
-    const response2 = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/1`)
-      .set('Cookie', cookieHeader ?? '');
+  describe('Multiple Requests', () => {
+    it('should handle multiple reset password requests for same user', async () => {
+      // First reset
+      const response1 = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/1`)
+        .set('Cookie', cookieHeader ?? '');
 
-    expect(response2.status).toBe(200);
-    expect(response2.body.data.active).toBe('Inactive');
+      expect(response1.status).toBe(200);
+      expect(response1.body.data.active).toBe('Inactive');
 
-    // ===== TEST 8: RESPONSE STRUCTURE =====
-    console.log('🧪 Testing response structure...');
+      // Second reset (should still work)
+      const response2 = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/1`)
+        .set('Cookie', cookieHeader ?? '');
 
-    const structureResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/1`)
-      .set('Cookie', cookieHeader ?? '');
+      expect(response2.status).toBe(200);
+      expect(response2.body.data.active).toBe('Inactive');
+    });
+  });
 
-    expect(structureResponse.status).toBe(200);
-    expect(structureResponse.body).toHaveProperty('message');
-    expect(structureResponse.body).toHaveProperty('data');
-    expect(structureResponse.body.message).toBe(
-      'Success to reset password user.',
-    );
-    expect(structureResponse.body.data).toHaveProperty('id');
-    expect(structureResponse.body.data).toHaveProperty('active');
-    expect(structureResponse.body.data).toHaveProperty('updated_by');
-    expect(structureResponse.body.data.id).toBe(1);
-    expect(structureResponse.body.data.active).toBe('Inactive');
-    expect(structureResponse.body.data.updated_by).toBe(1);
+  describe('Response Structure', () => {
+    it('should return correct response structure', async () => {
+      const response = await supertest(web)
+        .post(`${baseUrlTest}/reset-password/1`)
+        .set('Cookie', cookieHeader ?? '');
 
-    // ===== TEST 9: UPDATE THE UPDATED_BY FIELD CORRECTLY =====
-    console.log('🧪 Testing update the updated_by field correctly...');
-
-    const updatedByResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/1`)
-      .set('Cookie', cookieHeader ?? '');
-
-    expect(updatedByResponse.status).toBe(200);
-    expect(updatedByResponse.body.data.updated_by).toBe(1); // Should be the user ID being reset
-
-    // ===== TEST 10: RESET PASSWORD FOR NEWLY CREATED USER =====
-    console.log('🧪 Testing reset password for newly created user...');
-
-    // First create a new user
-    const createResponse = await supertest(web)
-      .post(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '')
-      .send({
-        email: 'newuser@example.com',
-        name: 'New User',
-        gender: 'Male',
-        birthdate: '1990-01-01',
-        role_id: 1,
-      });
-
-    expect(createResponse.status).toBe(200);
-    const newUserId = createResponse.body.data.id;
-
-    // Then reset password for the new user
-    const newUserResetResponse = await supertest(web)
-      .post(`${baseUrlTest}/reset-password/${newUserId}`)
-      .set('Cookie', cookieHeader ?? '');
-
-    expect(newUserResetResponse.status).toBe(200);
-    expect(newUserResetResponse.body.data.active).toBe('Inactive');
-    expect(newUserResetResponse.body.data.id).toBe(newUserId);
-    expect(newUserResetResponse.body.data.updated_by).toBe(newUserId);
-
-    console.log('✅ All reset password user flow tests completed successfully');
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.message).toBe('Success to reset password user.');
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('active');
+      expect(response.body.data).toHaveProperty('updated_by');
+    });
   });
 });

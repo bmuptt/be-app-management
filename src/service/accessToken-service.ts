@@ -7,9 +7,12 @@ import { IAccessTokenResponse } from '../model/accessToken-model';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { accessTokenRepository } from '../repository';
 
+// Type alias untuk kompatibilitas dengan Extended Prisma Client
+type PrismaClientOrTransaction = PrismaClient | Prisma.TransactionClient | any;
+
 export class AccessTokenService {
   static async detailByRefreshToken(
-    prisma: PrismaClient,
+    prisma: PrismaClientOrTransaction,
     refresh_token: string,
   ) {
     return await accessTokenRepository.findUniqueByRefreshToken(
@@ -19,7 +22,7 @@ export class AccessTokenService {
   }
 
   static async addToken(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientOrTransaction,
     user: IUserObject | IUserObjectWithoutPassword,
   ): Promise<IAccessTokenResponse> {
     const token = generateToken(user);
@@ -34,14 +37,14 @@ export class AccessTokenService {
   }
 
   static async destroy(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientOrTransaction,
     refresh_token: string,
   ) {
     await accessTokenRepository.deleteByRefreshToken(prisma, refresh_token);
   }
 
   static async destroyByToken(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientOrTransaction,
     token: string,
   ) {
     await accessTokenRepository.deleteByToken(prisma, token);

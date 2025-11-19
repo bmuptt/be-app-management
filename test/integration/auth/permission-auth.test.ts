@@ -2,121 +2,135 @@ import dotenv from 'dotenv';
 import { TestHelper, AuthLogic } from '../../test-util';
 import supertest from 'supertest';
 import { web } from '../../../src/config/web';
-import { logger } from '../../../src/config/logging';
 
 dotenv.config();
 
 const baseUrlTest = '/api/permission';
 
-describe('Permission Auth Business Flow', () => {
+describe('Permission', () => {
   let cookieHeader: string | null;
 
   beforeEach(async () => {
-    // Increase timeout for database operations
-    jest.setTimeout(30000);
-    // Migrate dan seed ulang database untuk setiap test case
     await TestHelper.refreshDatabase();
 
-    const responseLogin = await AuthLogic.getLoginSuperAdmin();
-    expect(responseLogin.status).toBe(200);
-
-    const cookies = responseLogin.headers['set-cookie'];
+    const loginResponse = await AuthLogic.getLoginSuperAdmin();
+    const cookies = loginResponse.headers['set-cookie'];
     cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : cookies;
   });
 
   afterEach(async () => {
-    // Cleanup database setelah test
     await TestHelper.cleanupDatabase();
   });
 
-  it('Should handle complete permission flow including authentication, validation, and different menu permissions', async () => {
-    // Increase timeout for this comprehensive test
-    jest.setTimeout(30000);
-    // ===== TEST 1: AUTHENTICATION =====
-    console.log('🧪 Testing permission authentication...');
+  describe('Authentication', () => {
+    it('should reject permission request without authentication', async () => {
+      const response = await supertest(web).get(baseUrlTest);
 
-    // Should return 401 when accessing permission without authentication
-    const noAuthResponse = await supertest(web).get(baseUrlTest);
-    expect(noAuthResponse.status).toBe(401);
-
-    // ===== TEST 2: VALIDATION =====
-    console.log('🧪 Testing permission validation...');
-
-    // Should return 400 when key_menu parameter is missing
-    const missingParamResponse = await supertest(web)
-      .get(baseUrlTest)
-      .set('Cookie', cookieHeader ?? '');
-    expect(missingParamResponse.status).toBe(400);
-    expect(missingParamResponse.body.errors).toEqual(
-      expect.arrayContaining(['The key menu is required!']),
-    );
-
-    // Should return 400 when key_menu parameter is empty
-    const emptyParamResponse = await supertest(web)
-      .get(`${baseUrlTest}?key_menu=`)
-      .set('Cookie', cookieHeader ?? '');
-    expect(emptyParamResponse.status).toBe(400);
-    expect(emptyParamResponse.body.errors).toEqual(
-      expect.arrayContaining(['The key menu is required!']),
-    );
-
-    // ===== TEST 3: NONEXISTENT MENU =====
-    console.log('🧪 Testing nonexistent menu permissions...');
-
-    const nonexistentResponse = await supertest(web)
-      .get(`${baseUrlTest}?key_menu=nonexistent_menu`)
-      .set('Cookie', cookieHeader ?? '');
-    expect(nonexistentResponse.status).toBe(200);
-    expect(nonexistentResponse.body.data).toEqual({
-      access: false,
-      create: false,
-      update: false,
-      delete: false,
-      approve1: false,
-      approve2: false,
-      approve3: false,
+      expect(response.status).toBe(401);
     });
 
-    // ===== TEST 4: EXISTING MENU PERMISSIONS =====
-    console.log('🧪 Testing existing menu permissions...');
-
-    const userMenuResponse = await supertest(web)
-      .get(`${baseUrlTest}?key_menu=user`)
-      .set('Cookie', cookieHeader ?? '');
-    expect(userMenuResponse.status).toBe(200);
-    expect(userMenuResponse.body.data.access).toBe(true);
-    expect(userMenuResponse.body.data.create).toBe(true);
-    expect(userMenuResponse.body.message).toBe('Success to get permission.');
-
-    // ===== TEST 5: MULTIPLE MENU KEYS =====
-    console.log('🧪 Testing multiple menu keys...');
-
-    const testCases = [
-      { key_menu: 'user', expectedAccess: true },
-      { key_menu: 'role', expectedAccess: true },
-      { key_menu: 'menu', expectedAccess: true },
-      { key_menu: 'nonexistent', expectedAccess: false },
-    ];
-
-    for (const testCase of testCases) {
+    it('should accept permission request with valid authentication', async () => {
       const response = await supertest(web)
-        .get(`${baseUrlTest}?key_menu=${testCase.key_menu}`)
+        .get(`${baseUrlTest}?key_menu=user`)
         .set('Cookie', cookieHeader ?? '');
 
       expect(response.status).toBe(200);
-      expect(response.body.data.access).toBe(testCase.expectedAccess);
-    }
+    });
+  });
 
-    // ===== TEST 6: SUCCESS MESSAGE =====
-    console.log('🧪 Testing success message...');
+  describe('Validation', () => {
+    it('should reject when key_menu parameter is missing', async () => {
+      const response = await supertest(web)
+        .get(baseUrlTest)
+        .set('Cookie', cookieHeader ?? '');
 
-    const successResponse = await supertest(web)
-      .get(`${baseUrlTest}?key_menu=user`)
-      .set('Cookie', cookieHeader ?? '');
-    expect(successResponse.status).toBe(200);
-    expect(successResponse.body.message).toBe('Success to get permission.');
-    expect(successResponse.body.data).toBeDefined();
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('The key menu is required!');
+    });
 
-    console.log('✅ All permission flow tests completed successfully');
+    it('should reject when key_menu parameter is empty', async () => {
+      const response = await supertest(web)
+        .get(`${baseUrlTest}?key_menu=`)
+        .set('Cookie', cookieHeader ?? '');
+
+      expect(response.status).toBe(400);
+      expect(response.body.errors).toContain('The key menu is required!');
+    });
+  });
+
+  describe('Permission Checks', () => {
+    it('should return false permissions for nonexistent menu', async () => {
+      const response = await supertest(web)
+        .get(`${baseUrlTest}?key_menu=nonexistent_menu`)
+        .set('Cookie', cookieHeader ?? '');
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual({
+        access: false,
+        create: false,
+        update: false,
+        delete: false,
+        approve1: false,
+        approve2: false,
+        approve3: false,
+      });
+    });
+
+    it('should return correct permissions for existing menu', async () => {
+      const response = await supertest(web)
+        .get(`${baseUrlTest}?key_menu=user`)
+        .set('Cookie', cookieHeader ?? '');
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.access).toBe(true);
+      expect(response.body.data.create).toBe(true);
+      expect(response.body.message).toBe('Success to get permission.');
+    });
+
+    it('should return correct permissions for different menu keys', async () => {
+      const testCases = [
+        { key_menu: 'user', expectedAccess: true },
+        { key_menu: 'role', expectedAccess: true },
+        { key_menu: 'menu', expectedAccess: true },
+        { key_menu: 'nonexistent', expectedAccess: false },
+      ];
+
+      for (const testCase of testCases) {
+        const response = await supertest(web)
+          .get(`${baseUrlTest}?key_menu=${testCase.key_menu}`)
+          .set('Cookie', cookieHeader ?? '');
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.access).toBe(testCase.expectedAccess);
+      }
+    });
+  });
+
+  describe('Response Structure', () => {
+    it('should return correct response structure', async () => {
+      const response = await supertest(web)
+        .get(`${baseUrlTest}?key_menu=user`)
+        .set('Cookie', cookieHeader ?? '');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toHaveProperty('access');
+      expect(response.body.data).toHaveProperty('create');
+      expect(response.body.data).toHaveProperty('update');
+      expect(response.body.data).toHaveProperty('delete');
+      expect(response.body.data).toHaveProperty('approve1');
+      expect(response.body.data).toHaveProperty('approve2');
+      expect(response.body.data).toHaveProperty('approve3');
+    });
+
+    it('should return success message', async () => {
+      const response = await supertest(web)
+        .get(`${baseUrlTest}?key_menu=user`)
+        .set('Cookie', cookieHeader ?? '');
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Success to get permission.');
+    });
   });
 });

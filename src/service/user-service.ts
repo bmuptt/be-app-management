@@ -1,5 +1,9 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { IRequestUser, IUserObject } from '../model/user-model';
+import {
+  IRequestUser,
+  IUserEmailLookup,
+  IUserObject,
+} from '../model/user-model';
 import bcrypt from 'bcrypt';
 import { IRequestList } from '../model/global-model';
 import { pagination } from '../helper/pagination-helper';
@@ -100,5 +104,25 @@ export class UserService {
 
   static async takeOut(id: number) {
     return await userRepository.updateActiveStatus(id, 'Take Out', id);
+  }
+
+  static async getEmailsByIds(ids: number[]): Promise<IUserEmailLookup[]> {
+    if (!ids.length) {
+      return [];
+    }
+
+    const uniqueIds = Array.from(new Set(ids));
+    const users = await userRepository.findEmailsByIds(uniqueIds);
+    const map = new Map(users.map((user) => [user.id, user.email]));
+
+    const orderedUsers: IUserEmailLookup[] = [];
+    for (const id of uniqueIds) {
+      const email = map.get(id);
+      if (email) {
+        orderedUsers.push({ id, email });
+      }
+    }
+
+    return orderedUsers;
   }
 }

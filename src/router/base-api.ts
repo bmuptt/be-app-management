@@ -277,5 +277,4 @@ baseRouter.get(
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 baseRouter.post('/logout', verifyToken, AuthController.logout);
-
 baseRouter.use('/app-management', verifyToken, appManagementRouter);

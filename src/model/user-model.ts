@@ -20,6 +20,11 @@ export interface IUserObject
   updated_at: Date;
 }
 
+export interface IUserEmailLookup {
+  id: number;
+  email: string;
+}
+
 // Interface untuk user tanpa password (untuk internal use)
 export interface IUserObjectWithoutPassword
   extends Pick<IRequestUser, 'name' | 'gender' | 'birthdate' | 'role_id'> {

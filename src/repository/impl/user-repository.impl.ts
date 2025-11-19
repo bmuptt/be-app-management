@@ -6,6 +6,7 @@ import {
   IUserWithRole,
   IUserCreateData,
   IUserUpdateData,
+  IUserEmailLookup,
 } from '../../model/user-model';
 
 export class UserRepository implements IUserRepository {
@@ -102,5 +103,21 @@ export class UserRepository implements IUserRepository {
         updated_by: updatedBy,
       },
     });
+  }
+
+  async findEmailsByIds(ids: number[]): Promise<IUserEmailLookup[]> {
+    if (!ids.length) {
+      return [];
+    }
+
+    const users = await prismaClient.user.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        email: true,
+      },
+    });
+
+    return users;
   }
 }

@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  validateGetUserEmails,
   validateResetPasswordUser,
   validateStoreUser,
   validateUpdateUser,
@@ -69,6 +70,55 @@ export const userRouter = express.Router();
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 userRouter.get('/', UserController.index);
+
+/**
+ * @swagger
+ * /api/app-management/user/get-email:
+ *   get:
+ *     summary: Get user email addresses by IDs
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: ids
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "1,2,3"
+ *         description: Comma separated list of user IDs to fetch email addresses for
+ *     responses:
+ *       200:
+ *         description: Emails retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 1
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                         example: "john@example.com"
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+userRouter.get('/get-email', validateGetUserEmails, UserController.getEmailsByIds);
 
 /**
  * @swagger

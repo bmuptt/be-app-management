@@ -101,4 +101,22 @@ export class UserController {
       next(e);
     }
   }
+
+  static async getEmailsByIds(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const ids: number[] = res.locals.userIds || [];
+      const data = await UserService.getEmailsByIds(ids);
+
+      res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
 }
