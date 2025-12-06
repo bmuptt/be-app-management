@@ -124,7 +124,7 @@ export class MenuRepository implements IMenuRepository {
   async sortMenus(
     menus: { id: number; order_number: number; updated_by?: number | null }[],
   ): Promise<void> {
-    await prismaClient.$transaction(async (tx) => {
+    await prismaClient.$transaction(async (tx: Prisma.TransactionClient) => {
       await Promise.all(
         menus.map((data) =>
           tx.menu.update({
@@ -143,7 +143,7 @@ export class MenuRepository implements IMenuRepository {
     id: number,
     updatedBy: number,
   ): Promise<IMenuObject> {
-    return await prismaClient.$transaction(async (tx) => {
+    return await prismaClient.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.roleMenu.deleteMany({
         where: { menu_id: id },
       });
@@ -165,7 +165,7 @@ export class MenuRepository implements IMenuRepository {
   }
 
   async hardDelete(id: number): Promise<IMenuObject> {
-    return await prismaClient.$transaction(async (tx) => {
+    return await prismaClient.$transaction(async (tx: Prisma.TransactionClient) => {
       // Delete related role_menu records first
       await tx.roleMenu.deleteMany({
         where: { menu_id: id },

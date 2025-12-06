@@ -1,4 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { PrismaClientType } from '../../config/database';
 import {
   IUserObject,
   IUserObjectWithoutPassword,
@@ -9,7 +10,7 @@ import { IAccessTokenBasic } from '../../model/auth-model';
 
 export class AccessTokenRepository implements IAccessTokenRepository {
   async findUniqueByRefreshToken(
-    prisma: PrismaClient,
+    prisma: PrismaClientType,
     refreshToken: string,
   ): Promise<IAccessTokenBasic | null> {
     return await prisma.accessToken.findUnique({
@@ -20,7 +21,7 @@ export class AccessTokenRepository implements IAccessTokenRepository {
   }
 
   async create(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientType,
     user: IUserObject | IUserObjectWithoutPassword,
     token: string,
     refreshToken: string,
@@ -40,7 +41,7 @@ export class AccessTokenRepository implements IAccessTokenRepository {
   }
 
   async deleteByRefreshToken(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientType,
     refreshToken: string,
   ): Promise<void> {
     await prisma.accessToken.delete({
@@ -51,7 +52,7 @@ export class AccessTokenRepository implements IAccessTokenRepository {
   }
 
   async deleteByToken(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientType,
     token: string,
   ): Promise<void> {
     await prisma.accessToken.deleteMany({

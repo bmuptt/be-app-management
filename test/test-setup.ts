@@ -23,6 +23,9 @@ if (process.env.NODE_ENV === 'testing') {
 }
 
 import { PrismaClient } from '@prisma/client';
+// @ts-ignore
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -73,13 +76,8 @@ export async function setupTestSchema(): Promise<void> {
     const baseUrl = process.env.DATABASE_URL || '';
     const urlWithoutSchema = baseUrl.replace(/[?&]schema=[^&]*/, '');
     
-    const adminClient = new PrismaClient({
-      datasources: {
-        db: {
-          url: urlWithoutSchema,
-        },
-      },
-    });
+    const pool = new Pool({ connectionString: urlWithoutSchema });
+    const adminClient = new PrismaClient({ adapter: new PrismaPg(pool) });
 
     // Buat schema jika belum ada
     await adminClient.$executeRawUnsafe(
@@ -246,13 +244,8 @@ export async function cleanupTestSchema(): Promise<void> {
     const baseUrl = process.env.DATABASE_URL || '';
     const urlWithoutSchema = baseUrl.replace(/[?&]schema=[^&]*/, '');
     
-    const adminClient = new PrismaClient({
-      datasources: {
-        db: {
-          url: urlWithoutSchema,
-        },
-      },
-    });
+    const pool = new Pool({ connectionString: urlWithoutSchema });
+    const adminClient = new PrismaClient({ adapter: new PrismaPg(pool) });
 
     // Drop schema (akan drop semua table di dalamnya)
     await adminClient.$executeRawUnsafe(
@@ -301,4 +294,3 @@ if (process.env.NODE_ENV === 'testing') {
 
 // Export function untuk memastikan schema sudah setup (dipanggil dari test-util)
 export { getOrCreateSchemaSetup };
-

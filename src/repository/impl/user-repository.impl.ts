@@ -120,4 +120,40 @@ export class UserRepository implements IUserRepository {
 
     return users;
   }
+
+  async findDetailsByIds(ids: number[]): Promise<IUserWithRole[]> {
+    if (!ids.length) {
+      return [];
+    }
+
+    const users = await prismaClient.user.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        gender: true,
+        birthdate: true,
+        photo: true,
+        active: true,
+        role_id: true,
+        created_by: true,
+        created_at: true,
+        updated_by: true,
+        updated_at: true,
+        role: {
+          select: {
+            id: true,
+            name: true,
+            created_by: true,
+            created_at: true,
+            updated_by: true,
+            updated_at: true,
+          },
+        },
+      },
+    });
+
+    return users;
+  }
 }

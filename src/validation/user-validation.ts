@@ -151,3 +151,18 @@ export const validateGetUserEmails = async (
     next(e);
   }
 };
+
+export const validateGetUserDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { ids } = getUserEmailsQuerySchema.parse(req.query);
+    res.locals.userIds = ids;
+
+    next();
+  } catch (e) {
+    next(e);
+  }
+};

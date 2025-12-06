@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   validateGetUserEmails,
+  validateGetUserDetails,
   validateResetPasswordUser,
   validateStoreUser,
   validateUpdateUser,
@@ -119,6 +120,7 @@ userRouter.get('/', UserController.index);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 userRouter.get('/get-email', validateGetUserEmails, UserController.getEmailsByIds);
+userRouter.get('/get-details', validateGetUserDetails, UserController.getDetailsByIds);
 
 /**
  * @swagger

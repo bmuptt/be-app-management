@@ -26,6 +26,61 @@ Contoh respons:
 }
 ```
 
+## Mendapatkan Detail User Berdasarkan IDs
+Query param wajib: `ids` (comma separated).
+```bash
+curl --location 'http://localhost:3000/api/app-management/user/get-details?ids=1,2,3' \
+  --header 'Accept: application/json'
+```
+
+Contoh respons:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "email": "john@example.com",
+      "name": "John Doe",
+      "username": "john",
+      "role": { "id": 1, "name": "Admin" },
+      "active": "Active",
+      "registered_at": "2024-01-01T00:00:00.000Z",
+      "contact": null
+    }
+  ]
+}
+```
+
+Contoh error (tanpa autentikasi atau validasi gagal):
+
+1) Tanpa autentikasi (akan 401)
+```bash
+curl --location 'http://localhost:3000/api/app-management/user/get-details?ids=1'
+```
+
+2) Query `ids` kosong (akan 400)
+```bash
+curl --location 'http://localhost:3000/api/app-management/user/get-details'
+```
+Respons:
+```json
+{
+  "errors": ["The ids is required!"]
+}
+```
+
+3) Query `ids` berisi non-numeric (akan 400)
+```bash
+curl --location 'http://localhost:3000/api/app-management/user/get-details?ids=abc,1'
+```
+Respons:
+```json
+{
+  "errors": ["The ids must be positive integers!"]
+}
+```
+
 ## Mendapatkan Daftar User
 Query params opsional: `page`, `limit`, `search`, `active` (`Active|Inactive|Take Out`).
 ```bash
@@ -77,4 +132,3 @@ Path param wajib: `id`. Body tidak diperlukan.
 ```bash
 curl -X POST "http://localhost:3000/api/app-management/user/take-out/123"
 ```
-

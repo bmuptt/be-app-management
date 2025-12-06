@@ -63,7 +63,7 @@ export class RoleRepository implements IRoleRepository {
   }
 
   async deleteWithTransaction(id: number): Promise<IRoleObject> {
-    return await prismaClient.$transaction(async (tx) => {
+    return await prismaClient.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.user.updateMany({
         where: { role_id: id },
         data: { role_id: null },

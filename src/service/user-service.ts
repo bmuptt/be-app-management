@@ -3,6 +3,7 @@ import {
   IRequestUser,
   IUserEmailLookup,
   IUserObject,
+  IUserDetailLookup,
 } from '../model/user-model';
 import bcrypt from 'bcrypt';
 import { IRequestList } from '../model/global-model';
@@ -124,5 +125,40 @@ export class UserService {
     }
 
     return orderedUsers;
+  }
+
+  static async getDetailsByIds(ids: number[]): Promise<IUserDetailLookup[]> {
+    if (!ids.length) {
+      return [];
+    }
+
+    const uniqueIds = Array.from(new Set(ids));
+    const users = await userRepository.findDetailsByIds(uniqueIds);
+
+    const map = new Map(
+      users.map((user) => [
+        user.id,
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          username: user.email.split('@')[0],
+          role: user.role ? { id: user.role.id, name: user.role.name } : null,
+          active: user.active,
+          registered_at: user.created_at,
+          contact: null,
+        } as IUserDetailLookup,
+      ]),
+    );
+
+    const orderedDetails: IUserDetailLookup[] = [];
+    for (const id of uniqueIds) {
+      const detail = map.get(id);
+      if (detail) {
+        orderedDetails.push(detail);
+      }
+    }
+
+    return orderedDetails;
   }
 }

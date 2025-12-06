@@ -1,4 +1,4 @@
-FROM node:23.6.0
+FROM node:24.11.1
 
 # Set timezone to Asia/Jakarta (UTC+7)
 ENV TZ=Asia/Jakarta

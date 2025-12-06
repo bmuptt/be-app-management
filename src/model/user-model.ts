@@ -25,6 +25,17 @@ export interface IUserEmailLookup {
   email: string;
 }
 
+export interface IUserDetailLookup {
+  id: number;
+  email: string;
+  name: string;
+  username: string;
+  role?: { id: number; name: string } | null;
+  active: string;
+  registered_at: Date;
+  contact?: Record<string, unknown> | null;
+}
+
 // Interface untuk user tanpa password (untuk internal use)
 export interface IUserObjectWithoutPassword
   extends Pick<IRequestUser, 'name' | 'gender' | 'birthdate' | 'role_id'> {

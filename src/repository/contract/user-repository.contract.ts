@@ -33,4 +33,5 @@ export interface IUserRepository {
     updatedBy: number,
   ): Promise<IUserObject>;
   findEmailsByIds(ids: number[]): Promise<IUserEmailLookup[]>;
+  findDetailsByIds(ids: number[]): Promise<IUserWithRole[]>;
 }

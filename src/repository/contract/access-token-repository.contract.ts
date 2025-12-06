@@ -1,4 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { PrismaClientType } from '../../config/database';
 import {
   IUserObject,
   IUserObjectWithoutPassword,
@@ -8,21 +9,21 @@ import { IAccessTokenBasic } from '../../model/auth-model';
 
 export interface IAccessTokenRepository {
   findUniqueByRefreshToken(
-    prisma: PrismaClient,
+    prisma: PrismaClientType,
     refreshToken: string,
   ): Promise<IAccessTokenBasic | null>;
   create(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientType,
     user: IUserObject | IUserObjectWithoutPassword,
     token: string,
     refreshToken: string,
   ): Promise<IAccessTokenResponse>;
   deleteByRefreshToken(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientType,
     refreshToken: string,
   ): Promise<void>;
   deleteByToken(
-    prisma: PrismaClient | Prisma.TransactionClient,
+    prisma: PrismaClientType,
     token: string,
   ): Promise<void>;
 }

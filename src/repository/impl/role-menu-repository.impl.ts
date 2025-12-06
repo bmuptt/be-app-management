@@ -9,6 +9,7 @@ import {
   IRoleMenuPerm,
   IMenuWithPerm,
 } from '../../model/role-menu-model';
+import { IMenuObject } from '../../model/menu-model';
 
 export class RoleMenuRepository implements IRoleMenuRepository {
   async findMany(where: Prisma.RoleMenuWhereInput): Promise<IRoleMenuObject[]> {
@@ -92,7 +93,7 @@ export class RoleMenuRepository implements IRoleMenuRepository {
   }
 
   async upsertMany(data: IRoleMenuUpsertData[]): Promise<IRoleMenuObject[]> {
-    return await prismaClient.$transaction(async (tx) => {
+    return await prismaClient.$transaction(async (tx: Prisma.TransactionClient) => {
       const upsertPromises = data.map(async (item) => {
         return tx.roleMenu.upsert({
           where: {
@@ -146,7 +147,7 @@ export class RoleMenuRepository implements IRoleMenuRepository {
   }
 
   async getMenuWithPermissions(roleId: number): Promise<IMenuWithPerm[]> {
-    const menus = await prismaClient.menu.findMany({
+    const menus: IMenuObject[] = await prismaClient.menu.findMany({
       where: { active: 'Active' },
       orderBy: { order_number: 'asc' },
     });
@@ -157,7 +158,7 @@ export class RoleMenuRepository implements IRoleMenuRepository {
     perms.forEach((p) => permMap.set(p.menu_id, p));
 
     type RawNode = IMenuWithPerm & { menu_id: number | null };
-    const rawNodes: RawNode[] = menus.map((m) => {
+    const rawNodes: RawNode[] = menus.map((m: IMenuObject) => {
       const p = permMap.get(m.id);
       return {
         id: m.id,

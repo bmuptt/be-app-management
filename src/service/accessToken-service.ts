@@ -4,11 +4,11 @@ import {
   generateToken,
 } from '../validation/auth-validation';
 import { IAccessTokenResponse } from '../model/accessToken-model';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClientType } from '../config/database';
 import { accessTokenRepository } from '../repository';
 
 // Type alias untuk kompatibilitas dengan Extended Prisma Client
-type PrismaClientOrTransaction = PrismaClient | Prisma.TransactionClient | any;
+type PrismaClientOrTransaction = PrismaClientType;
 
 export class AccessTokenService {
   static async detailByRefreshToken(
