@@ -17,6 +17,7 @@ services:
       - RATE_LIMIT=${RATE_LIMIT}
       - APM_SERVER_URL=${APM_SERVER_URL_DOCKER}
       - APM_API_KEY=${APM_API_KEY}
+      - APP_APM_ACTIVE=${APP_APM_ACTIVE}
       - TZ=Asia/Jakarta
     networks:
       - be_app_management_network
